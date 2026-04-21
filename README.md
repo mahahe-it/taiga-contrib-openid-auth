@@ -124,7 +124,7 @@ services:
       - taiga
 
   taiga-back:
-    image: robrotheram/taiga-back-openid
+    image: ghcr.io/mahahe-it/taiga-back-openid
     environment: *default-back-environment
     volumes: *default-back-volumes
     networks:
@@ -159,7 +159,7 @@ services:
       - taiga
 
   taiga-front:
-    image: robrotheram/taiga-front-openid
+    image: ghcr.io/mahahe-it/taiga-front-openid
     environment:
       TAIGA_URL: "http://localhost:9000"
       TAIGA_WEBSOCKETS_URL: "ws://localhost:9000"
