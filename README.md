@@ -5,15 +5,10 @@ An OpenID / Keycloak Authentication Plugin. Heavily based off of
 
 Compatible with Taiga 4.2.1, 5.x, 6
 
-&gt; **READ THIS FIRST!**: We recently announced Taiga plans for the future and they greatly affect how we manage this repository and the current Taiga 6 release. Check it [here](https://blog.taiga.io/announcing_taiganext.html).
-
-
 # Installation
 
 ## Docker
-This plugin is compatible with the offical taiga docker images 😃
-
-https://github.com/kaleidos-ventures/taiga-docker/
+This plugin is compatible with the [offical taiga docker images](https://github.com/taigaio/taiga-docker) 😃
 
 This project builds 2 images based off the images provided by taiga. This should allow anyother customisations to continue to work.
 
@@ -21,16 +16,16 @@ The following will show the changes needed to the default docker-compose file to
 
 ### Config 
 The 2 images:
- - robrotheram/taiga-front-openid
- - robrotheram/taiga-back-openid
+ - ghcr.io/mahahe-it/taiga-back-openid
+ - ghcr.io/mahahe-it/taiga-front-openid
 
 Use the following environmental setting to configure the frontend conf.json and backed settings.py
 
 ```
 ENABLE_OPENID: "True"
-OPENID_URL : "https://{url-to-keycloak}/auth/realms/{realm}/protocol/openid-connect/auth"
-OPENID_USER_URL : "https://{url-to-keycloak}/auth/realms/{realm}/protocol/openid-connect/userinfo"
-OPENID_TOKEN_URL : "https://{url-to-keycloak}/auth/realms/{realm}/protocol/openid-connect/token"
+OPENID_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/auth"
+OPENID_USER_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/userinfo"
+OPENID_TOKEN_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/token"
 OPENID_CLIENT_ID : "<CLient ID>"
 OPENID_CLIENT_SECRET : "<CLient SECRET>"
 OPENID_NAME: "Name you want to give your openid provider e.g keycloak"
@@ -103,8 +98,8 @@ x-environment:
 
   # OpenID settings
   ENABLE_OPENID: "True"
-  OPENID_USER_URL : "https://{url-to-keycloak}/auth/realms/{realm}/protocol/openid-connect/userinfo"
-  OPENID_TOKEN_URL : "https://{url-to-keycloak}/auth/realms/{realm}/protocol/openid-connect/token"
+  OPENID_USER_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/userinfo"
+  OPENID_TOKEN_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/token"
   OPENID_CLIENT_ID : "<CLient ID>"
   OPENID_CLIENT_SECRET : "<CLient SECRET>"
   OPENID_SCOPE="openid email"
@@ -169,7 +164,7 @@ services:
       TAIGA_URL: "http://localhost:9000"
       TAIGA_WEBSOCKETS_URL: "ws://localhost:9000"
       ENABLE_OPENID: "true"
-      OPENID_URL : "https://{url-to-keycloak}/auth/realms/{realm}/protocol/openid-connect/auth"
+      OPENID_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/auth"
       OPENID_CLIENT_ID : "<ClientID>"
       OPENID_NAME: "Name you want to give your openid provider e.g keycloak"
     networks:
@@ -241,8 +236,6 @@ For Docker building for new release make sure that the following files are coppi
 **Frontend:**
 copy the config.json and config_env_subst.sh from https://github.com/kaleidos-ventures/taiga-front/tree/main/docker
 
-
-
 ## Manual installation
 ### Taiga Backend
 
@@ -295,9 +288,9 @@ make build
 
 # Contributions
 My thanks to all the people who have added to the plugin
-@cristianlazarop 
-@swedishborgie
-@baloo42 
-@carneirofc
-The whole taiga team who wrote the github plugin that this plugin is based off.
-
+- @cristianlazarop 
+- @swedishborgie
+- @baloo42 
+- @carneirofc
+- @mahahe-it
+- The whole taiga team who wrote the github plugin that this plugin is based off.
