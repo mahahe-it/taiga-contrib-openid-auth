@@ -13,18 +13,18 @@ export $(shell sed 's/=.*//' .env)
 testenv: 
 	env
 
-all: clean test build
+all: build
 
 build: build-front build-back
 
 build-front:
 	cd front && npm install && npm run build
 	echo $(CIRCLE_BRANCH)
-	sudo docker build -f docker/front/Dockerfile --no-cache . -t ${dockerhubrepofront}:$(CIRCLE_TAG)  --build-arg RELEASE=$(CIRCLE_BRANCH) --build-arg TAIGA_VERSION=$(CIRCLE_TAG)
+	docker build -f docker/front/Dockerfile --no-cache . -t ${dockerhubrepofront}:$(CIRCLE_TAG)  --build-arg RELEASE=$(CIRCLE_BRANCH) --build-arg TAIGA_VERSION=$(CIRCLE_TAG)
 
 build-back:
-	sudo docker build -f docker/back/Dockerfile --no-cache . -t ${dockerhubrepoback}:$(CIRCLE_TAG)  --build-arg RELEASE=$(CIRCLE_BRANCH) --build-arg TAIGA_VERSION=$(CIRCLE_TAG)
+	docker build -f docker/back/Dockerfile --no-cache . -t ${dockerhubrepoback}:$(CIRCLE_TAG)  --build-arg RELEASE=$(CIRCLE_BRANCH) --build-arg TAIGA_VERSION=$(CIRCLE_TAG)
 
 publish:
-	sudo docker push ${dockerhubrepofront}:$(CIRCLE_TAG)
-	sudo docker push ${dockerhubrepoback}:$(CIRCLE_TAG)
+	docker push ${dockerhubrepofront}:$(CIRCLE_TAG)
+	docker push ${dockerhubrepoback}:$(CIRCLE_TAG)
