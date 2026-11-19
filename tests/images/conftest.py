@@ -39,6 +39,13 @@ class Container:
                 pytest.fail(f"{self.name} not ready:\n{logs.stdout}\n{logs.stderr}")
             time.sleep(0.5)
 
+    def logs(self) -> str:
+        result = cli("logs", self.name, check=False)
+        return result.stdout + result.stderr
+
+    def wait_exit(self) -> int:
+        return int(cli("wait", self.name).stdout.strip().splitlines()[-1])
+
     def read(self, path: str) -> str:
         return self.exec("cat", path).stdout
 
@@ -53,10 +60,11 @@ class Container:
 def start_front():
     containers = []
 
-    def start(env: dict, volumes: tuple[str, ...] = ()) -> Container:
+    def start(env: dict, volumes: tuple[str, ...] = (), wait: bool = True) -> Container:
         container = Container(FRONT_IMAGE, env, volumes)
         containers.append(container)
-        container.wait_http()
+        if wait:
+            container.wait_http()
         return container
 
     yield start
