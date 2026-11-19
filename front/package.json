@@ -24,7 +24,7 @@
   "homepage": "https://github.com/taigaio/taiga-contrib-github-auth",
   "dependencies": {
     "coffee-script": "^1.8.0",
-    "jade": "^1.9.1"
+    "pug": "^2.0.0"
   },
   "devDependencies": {
     "gulp": "^4.0.2",
