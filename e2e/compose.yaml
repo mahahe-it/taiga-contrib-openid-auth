@@ -39,7 +39,6 @@ x-rabbitmq-environment: &rabbitmq-environment
 
 services:
   taiga-db:
-    # renovate: datasource=docker depName=postgres
     image: docker.io/library/postgres:13.23-alpine
     environment:
       POSTGRES_DB: taiga
@@ -81,7 +80,6 @@ services:
         condition: service_started
 
   taiga-async-rabbitmq:
-    # renovate: datasource=docker depName=rabbitmq
     image: docker.io/library/rabbitmq:3.13.7-alpine
     hostname: taiga-async-rabbitmq
     environment: *rabbitmq-environment
@@ -100,7 +98,6 @@ services:
       OPENID_SCOPE: openid email profile
 
   taiga-events:
-    # renovate: datasource=docker depName=taigaio/taiga-events
     image: docker.io/taigaio/taiga-events:6.10.0
     environment:
       RABBITMQ_USER: taiga
@@ -111,20 +108,17 @@ services:
         condition: service_started
 
   taiga-events-rabbitmq:
-    # renovate: datasource=docker depName=rabbitmq
     image: docker.io/library/rabbitmq:3.13.7-alpine
     hostname: taiga-events-rabbitmq
     environment: *rabbitmq-environment
 
   taiga-protected:
-    # renovate: datasource=docker depName=taigaio/taiga-protected
     image: docker.io/taigaio/taiga-protected:6.10.1
     environment:
       MAX_AGE: "360"
       SECRET_KEY: e2e-secret-key
 
   taiga-gateway:
-    # renovate: datasource=docker depName=nginx
     image: docker.io/library/nginx:1.30.7-alpine
     volumes:
       - ./gateway.conf:/etc/nginx/conf.d/default.conf:ro,z
@@ -144,7 +138,6 @@ services:
       retries: 20
 
   keycloak:
-    # renovate: datasource=docker depName=quay.io/keycloak/keycloak
     image: quay.io/keycloak/keycloak:26.8.2
     command: ["start-dev", "--import-realm"]
     environment:
