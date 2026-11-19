@@ -1,6 +1,8 @@
 """taiga-front-openid: the plugin is served and conf.json extends upstream's."""
 
+import hashlib
 import json
+from pathlib import Path
 
 import pytest
 from conftest import CONF, cli
@@ -71,3 +73,11 @@ def test_failed_config_keeps_marker(start_front, tmp_path):
     assert container.wait_exit() != 0
     result = cli("cp", f"{container.name}:/tmp/openid-conf-generated", str(tmp_path / "marker"), check=False)
     assert result.returncode == 0, result.stderr
+
+
+def test_plugin_image_is_intact(start_front):
+    """The build copies the button image byte for byte (gulp 5 reads files as text by default)."""
+    container = start_front(ENABLED)
+    served = container.exec("sha256sum", "/usr/share/nginx/html/plugins/openid-auth/images/openid.png").stdout.split()[0]
+    source = Path(__file__).parents[2] / "front" / "images" / "openid.png"
+    assert served == hashlib.sha256(source.read_bytes()).hexdigest()
