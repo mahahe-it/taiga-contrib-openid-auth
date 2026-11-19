@@ -15,19 +15,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import requests
-import json
-
 from collections import namedtuple
-from urllib.parse import urljoin
 
+import requests
 from django.conf import settings
-from django.utils.translation import ugettext_lazy as _
-
+from django.utils.translation import gettext_lazy as _
 from taiga.base.connectors.exceptions import ConnectorBaseException
 from taiga.base.exceptions import AuthenticationFailed
 
-import logging
 
 class OpenIDApiError(ConnectorBaseException):
     pass
@@ -37,18 +32,20 @@ class OpenIDApiError(ConnectorBaseException):
 # Data
 ######################################################
 
-CLIENT_ID = getattr(settings, "OPENID_CLIENT_ID", None)
-CLIENT_SCOPE = getattr(settings, "OPENID_SCOPE", "openid info")
-CLIENT_SECRET = getattr(settings, "OPENID_CLIENT_SECRET", None)
-TOKEN_URL = getattr(settings, "OPENID_TOKEN_URL", None)
-USER_URL = getattr(settings, "OPENID_USER_URL", None)
-OPENID_FILTER = getattr(settings, "OPENID_FILTER", "")
-
-ID_FIELD  = getattr(settings, "OPENID_ID_FIELD", "sub")
-USER_FIELD = getattr(settings, "OPENID_USERNAME_FIELD", "preferred_username")
-NAME_FIELD = getattr(settings, "OPENID_FULLNAME_FIELD", "name")
-EMAIL_FIELD = getattr(settings, "OPENID_EMAIL_FIELD", "email")
-FILTER_FIELD = getattr(settings, "OPENID_FILTER_FIELD", None)
+# Settings are read at call time (see _setting), these are their defaults.
+DEFAULTS = {
+    "OPENID_CLIENT_ID": None,
+    "OPENID_CLIENT_SECRET": None,
+    "OPENID_SCOPE": "openid email",
+    "OPENID_TOKEN_URL": None,
+    "OPENID_USER_URL": None,
+    "OPENID_FILTER": "",
+    "OPENID_FILTER_FIELD": None,
+    "OPENID_ID_FIELD": "sub",
+    "OPENID_USERNAME_FIELD": "preferred_username",
+    "OPENID_FULLNAME_FIELD": "name",
+    "OPENID_EMAIL_FIELD": "email",
+}
 
 HEADERS = {"Accept": "application/json", }
 
@@ -60,18 +57,15 @@ User = namedtuple("User", ["id", "username", "full_name", "email"])
 ######################################################
 
 
-def _build_url(*args, **kwargs) -> str:
-    """
-    Return a valid url.
-    """
-    resource_url = API_RESOURCES_URLS
-    for key in args:
-        resource_url = resource_url[key]
+def _setting(name: str):
+    return getattr(settings, name, DEFAULTS[name])
 
-    if kwargs:
-        resource_url = resource_url.format(**kwargs)
 
-    return urljoin(API_URL, resource_url)
+def _json_or_none(response):
+    try:
+        return response.json()
+    except ValueError:
+        return None
 
 
 def _get(url: str, headers: dict) -> dict:
@@ -79,10 +73,11 @@ def _get(url: str, headers: dict) -> dict:
     Make a GET call.
     """
     response = requests.get(url, headers=headers)
-    data = response.json()
-    if response.status_code != 200:
+    data = _json_or_none(response)
+    if response.status_code != 200 or not isinstance(data, dict):
+        error = data.get("error", "") if isinstance(data, dict) else "response is not JSON"
         raise OpenIDApiError({"status_code": response.status_code,
-                              "error": data.get("error", "")})
+                              "error": error})
     return data
 
 
@@ -91,46 +86,65 @@ def _post(url: str, params: dict, headers: dict) -> dict:
     Make a POST call.
     """
     response = requests.post(url, data=params, headers=headers)
-    try:
-        data = response.json()
-    except:
+    data = _json_or_none(response)
+    # The detail goes into Taiga's JSON error response: text only, never bytes.
+    if not isinstance(data, dict):
         raise OpenIDApiError({"status_code": response.status_code,
-                        "error": 'error from data not retrievable',
-                        "content": response.content})
-    else:
-        if response.status_code != 200 or ("error" in data):
-            raise OpenIDApiError({"status_code": response.status_code,
-                            "error": data.get("error", ""),
-                            "content": response.content})
+                              "error": "error from data not retrievable",
+                              "content": response.text[:500]})
+    if response.status_code != 200 or "error" in data:
+        raise OpenIDApiError({"status_code": response.status_code,
+                              "error": data.get("error", ""),
+                              "content": response.text[:500]})
     return data
+
+
+def _check_filter(data: dict) -> None:
+    """
+    Reject the user unless the OPENID_FILTER_FIELD claim holds one of the
+    comma separated OPENID_FILTER values. The claim can be a list or a single string.
+    """
+    filter_field = _setting("OPENID_FILTER_FIELD")
+    if not filter_field:
+        return
+
+    claim = data.get(filter_field, None)
+    if claim is None:
+        raise AuthenticationFailed(f"OPENID_FILTER_CLAIM provided but '{filter_field}' not found in UserInfo")
+
+    claim_values = {claim} if isinstance(claim, str) else set(claim)
+    allowed = {value.strip() for value in _setting("OPENID_FILTER").split(",") if value.strip()}
+    if not allowed & claim_values:
+        raise AuthenticationFailed("User does not satisfy OPENID_FILTER")
 
 
 ######################################################
 # Simple calls
 ######################################################
 
-def login(access_code: str, token: str, redirect_uri: str, client_id: str = CLIENT_ID, client_secret: str = CLIENT_SECRET, headers: dict = HEADERS):
+def login(access_code: str, token: str, redirect_uri: str, headers: dict = HEADERS):
     """
     Get access_token fron an user authorized code, the client id and the client secret key.
     (See http://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint).
     """
-    if not CLIENT_ID or not CLIENT_SECRET:
+    client_id = _setting("OPENID_CLIENT_ID")
+    client_secret = _setting("OPENID_CLIENT_SECRET")
+    if not client_id or not client_secret:
         raise OpenIDApiError({"error_message": _(
             "The OpenID Connect plugin isn't properly configured. Please contact your sysadmin.")})
 
-    if token == "" or token == None:
-        url = TOKEN_URL
-        params = {"grant_type": "authorization_code",
-                  "code": access_code,
-                  "client_id": CLIENT_ID,
-                  "client_secret": CLIENT_SECRET,
-                  "redirect_uri": redirect_uri,
-                  "scope": CLIENT_SCOPE
-                  }
-        data = _post(url, params=params, headers=headers)
-        return AuthInfo(access_token=data.get("access_token", None))
-    else:
+    if token:
         return AuthInfo(access_token=token)
+
+    params = {"grant_type": "authorization_code",
+              "code": access_code,
+              "client_id": client_id,
+              "client_secret": client_secret,
+              "redirect_uri": redirect_uri,
+              "scope": _setting("OPENID_SCOPE"),
+              }
+    data = _post(_setting("OPENID_TOKEN_URL"), params=params, headers=headers)
+    return AuthInfo(access_token=data.get("access_token", None))
 
 
 def get_user_profile(headers: dict = HEADERS):
@@ -138,42 +152,20 @@ def get_user_profile(headers: dict = HEADERS):
     Get authenticated user info.
     (See openid.net/specs/openid-connect-core-1_0.html#UserInfo).
     """
-
-    url = USER_URL
-    data = _get(url, headers=headers)
-
-    if FILTER_FIELD:
-        userinfo_filter_claim = data.get(FILTER_FIELD, None)
-        if userinfo_filter_claim is None:
-            raise AuthenticationFailed("OPENID_FILTER_CLAIM provided but '{0}' not found in UserInfo".format(FILTER_FIELD))
-        filter_allowed = set(OPENID_FILTER.split(','))
-        if not filter_allowed & set(userinfo_filter_claim):
-            raise AuthenticationFailed("User does not satisfy OPENID_FILTER")
+    data = _get(_setting("OPENID_USER_URL"), headers=headers)
+    _check_filter(data)
 
     username = None
+    for field in (_setting("OPENID_USERNAME_FIELD"), "preferred_username", "full_name", "username", "email"):
+        if data.get(field, None) is not None:
+            username = data[field]
+            break
 
-    if data.get(USER_FIELD, None) != None :
-        username = data.get(USER_FIELD, None)
-
-    elif data.get("preferred_username", None) != None :
-        username = data.get("preferred_username", None)
-
-    elif data.get("full_name", None) != None :
-        username = data.get("full_name", None)
-
-    elif data.get("username", None) != None :
-        username = data.get("username", None)
-
-    elif data.get("email", None) != None :
-        username = data.get("email", None)
-
-    user =  User(id=data.get(ID_FIELD, None),
+    return User(id=data.get(_setting("OPENID_ID_FIELD"), None),
                 username=username,
-                full_name=data.get(NAME_FIELD, None),
-                email=data.get(EMAIL_FIELD, None),
+                full_name=data.get(_setting("OPENID_FULLNAME_FIELD"), None),
+                email=data.get(_setting("OPENID_EMAIL_FIELD"), None),
                 )
-    # logging.warning([data.get(ID_FIELD, None), username, data.get(NAME_FIELD, None), data.get(EMAIL_FIELD, None)])
-    return user
 
 ######################################################
 # Convined calls
@@ -186,6 +178,6 @@ def me(access_code: str, token: str, redirect_uri: str) -> tuple:
     """
     auth_info = login(access_code, token, redirect_uri)
     headers = HEADERS.copy()
-    headers["Authorization"] = "Bearer {}".format(auth_info.access_token)
+    headers["Authorization"] = f"Bearer {auth_info.access_token}"
     user = get_user_profile(headers=headers)
     return user

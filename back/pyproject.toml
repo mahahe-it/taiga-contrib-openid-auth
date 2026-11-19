@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taiga-contrib-openid-auth"
+# Bumped by release-please, never by hand.
+version = "0.0.0"
+description = "OpenID Connect login for Taiga"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "MaHaHe" }, { name = "Robert Fletcher" }]
+keywords = ["taiga", "openid", "oidc", "auth", "plugin"]
+requires-python = ">=3.11"
+# Django and requests come from taiga-back.
+dependencies = []
+classifiers = [
+    "Framework :: Django",
+    "Programming Language :: Python :: 3",
+    "Topic :: Internet :: WWW/HTTP",
+]
+
+[project.urls]
+Homepage = "https://github.com/mahahe-it/taiga-contrib-openid-auth"
+Issues = "https://github.com/mahahe-it/taiga-contrib-openid-auth/issues"
+
+[tool.setuptools.packages.find]
+include = ["taiga_contrib_openid_auth*"]

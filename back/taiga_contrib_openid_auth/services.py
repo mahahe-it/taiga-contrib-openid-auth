@@ -15,25 +15,22 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.db import transaction as tx
-from django.db import IntegrityError
-from django.utils.translation import ugettext as _
-
 from django.apps import apps
-
-from taiga.base.utils.slug import slugify_uniquely
-from taiga.base import exceptions as exc
 from django.conf import settings
-from taiga.auth.services import send_register_email
-from taiga.auth.services import make_auth_response_data, get_membership_by_token
+from django.db import IntegrityError
+from django.db import transaction as tx
+from django.utils.translation import gettext as _
+from taiga.auth.services import get_membership_by_token, make_auth_response_data, send_register_email
 from taiga.auth.signals import user_registered as user_registered_signal
+from taiga.base import exceptions as exc
+from taiga.base.utils.slug import slugify_uniquely
 
 from . import connector
 
 PUBLIC_REGISTER_ENABLED = getattr(settings, "PUBLIC_REGISTER_ENABLED", False)
 
 @tx.atomic
-def openid_register(username:str, email:str, full_name:str, openid_id:int, token:str=None):
+def openid_register(username:str, email:str, full_name:str, openid_id:int, token: str | None = None):
     """
     Register a new user from openid.
 

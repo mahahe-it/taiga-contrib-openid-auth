@@ -1,3 +1,3 @@
-__version__ = (6, 0, 0)
+from importlib.metadata import version
 
-default_app_config = "taiga_contrib_openid_auth.apps.TaigaContribOpenidAuthAppConfig"
+__version__ = version("taiga-contrib-openid-auth")
