@@ -94,7 +94,15 @@ mounted over upstream's keeps working.
 | `OPENID_CLIENT_ID` | | |
 | `OPENID_NAME` | `OpenID` | the button reads "Sign in with `<name>`" |
 | `OPENID_SCOPE` | `openid email` | same value as the back's |
+| `OPENID_LOGOUT_URL` | | the provider's end-session endpoint, e.g. `https://<keycloak>/realms/<realm>/protocol/openid-connect/logout`: logging out of Taiga ends the provider session too |
 | `OPENID_HIDE_LOGIN_FORM` | `false` | `true` hides the username/password form on the login page |
+
+With `OPENID_LOGOUT_URL`, logging out of Taiga after an OpenID sign-in sends
+the browser to the provider's end-session endpoint (`end_session_endpoint` in
+its discovery document) with `client_id` and `post_logout_redirect_uri` set to
+Taiga's URL, which the provider must allow (Keycloak: "Valid post logout
+redirect URIs", `+` for the redirect URIs). Without an ID token to pass, some
+providers, Keycloak included, ask the user to confirm the logout.
 
 `OPENID_HIDE_LOGIN_FORM=true` sets upstream's `defaultLoginEnabled` to `false`:
 the login page shows only the OpenID button. It does not turn passwords off:

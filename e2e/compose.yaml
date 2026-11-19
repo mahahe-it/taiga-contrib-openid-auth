@@ -98,6 +98,7 @@ services:
       OPENID_CLIENT_ID: taiga
       OPENID_NAME: Keycloak E2E
       OPENID_SCOPE: openid email profile
+      OPENID_LOGOUT_URL: http://keycloak:8080/realms/taiga/protocol/openid-connect/logout
 
   # The same front under a subpath, behind the gateway at /taiga/, OpenID only
   taiga-front-subpath:
