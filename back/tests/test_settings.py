@@ -22,6 +22,8 @@ ALL_VARS = {
     "OPENID_EMAIL_FIELD": "mail",
 }
 
+BOOL_VARS = ["OPENID_REQUIRE_VERIFIED_EMAIL", "OPENID_ALLOW_ACCESS_TOKEN"]
+
 PROBE = """
 import json, django
 from django.conf import settings
@@ -32,7 +34,7 @@ print(json.dumps({
     "values": {n: getattr(settings, n, None) for n in names},
     "defined": {n: hasattr(settings, n) for n in names},
 }))
-""".replace("NAMES", repr(sorted([*ALL_VARS, "OPENID_REQUIRE_VERIFIED_EMAIL"])))
+""".replace("NAMES", repr(sorted([*ALL_VARS, *BOOL_VARS])))
 
 
 def load_settings(env: dict, cwd: str = "/taiga-back") -> dict:
@@ -57,15 +59,17 @@ def test_openid_settings_from_env():
     assert {name: loaded["values"][name] for name in ALL_VARS} == ALL_VARS
 
 
+@pytest.mark.parametrize("name", BOOL_VARS)
 @pytest.mark.parametrize(("env", "value"), [("True", True), ("true", True), ("False", False), ("no", False)])
-def test_require_verified_email_from_env(env, value):
-    loaded = load_settings({"ENABLE_OPENID": "True", "OPENID_REQUIRE_VERIFIED_EMAIL": env})
-    assert loaded["values"]["OPENID_REQUIRE_VERIFIED_EMAIL"] is value
+def test_bool_setting_from_env(name, env, value):
+    loaded = load_settings({"ENABLE_OPENID": "True", name: env})
+    assert loaded["values"][name] is value
 
 
-def test_require_verified_email_unset_keeps_connector_default():
+@pytest.mark.parametrize("name", BOOL_VARS)
+def test_bool_setting_unset_keeps_connector_default(name):
     loaded = load_settings({"ENABLE_OPENID": "True"})
-    assert loaded["defined"]["OPENID_REQUIRE_VERIFIED_EMAIL"] is False
+    assert loaded["defined"][name] is False
 
 
 def test_unset_field_env_keeps_connector_default():

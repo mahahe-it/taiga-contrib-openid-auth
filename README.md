@@ -43,6 +43,7 @@ settings, and with `ENABLE_OPENID=True` it needs the plugin installed.
 | `OPENID_FILTER_FIELD` | | claim to filter on, e.g. `groups` (a list or a single string) |
 | `OPENID_FILTER` | | allowed values, comma separated, e.g. `taiga_users, taiga_admins` |
 | `OPENID_REQUIRE_VERIFIED_EMAIL` | `True` | link to an existing account only if the provider sends `email_verified: true` |
+| `OPENID_ALLOW_ACCESS_TOKEN` | `False` | accept an access token from the front (`/login?access_token=…`), see below |
 
 `PUBLIC_REGISTER_ENABLED=True` (upstream variable) lets the plugin create
 accounts on the first login; without it only existing users can sign in.
@@ -56,6 +57,13 @@ Users already linked, and new users, are not affected.
 Keycloak sends `email_verified: false` for users created by an admin unless
 "Email verified" is ticked. Tick it for them, or, if every email on your
 provider is trusted, set `OPENID_REQUIRE_VERIFIED_EMAIL=False`.
+
+`OPENID_ALLOW_ACCESS_TOKEN=True` lets an authenticating reverse proxy hand Taiga
+an access token in the login URL (`/login?access_token=…`) instead of the usual
+code flow. The token is only checked by calling the userinfo endpoint, which
+accepts tokens issued to any client of the provider, and the link carries no
+`state`: whoever gets a user to open such a link signs that user in to the
+token's account. Enable it only behind a proxy that controls the login URL.
 
 The image selects its settings with `DJANGO_SETTINGS_MODULE=settings.openid`,
 which loads upstream's `settings/config.py` and adds the plugin. A `config.py`
