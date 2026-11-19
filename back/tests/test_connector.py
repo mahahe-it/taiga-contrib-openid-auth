@@ -258,3 +258,32 @@ def test_unset_field_mapping_uses_default(openid_settings, unset):
     openid_settings.OPENID_FILTER_FIELD = unset
     openid_settings.OPENID_EMAIL_FIELD = unset
     assert profile(USERINFO).email == "alice@example.test"
+
+
+def test_token_auth_defaults_to_client_secret_post(openid_settings):
+    reply = fake_response(200, {"access_token": "tok"})
+    with mock.patch("requests.post", return_value=reply) as post:
+        connector.login("the-code", None, "http://taiga/login")
+    assert post.call_args.kwargs["data"]["client_id"] == "taiga"
+    assert post.call_args.kwargs["data"]["client_secret"] == "secret"
+    assert post.call_args.kwargs.get("auth") is None
+
+
+def test_token_auth_client_secret_basic(openid_settings):
+    openid_settings.OPENID_TOKEN_AUTH_METHOD = "client_secret_basic"
+    openid_settings.OPENID_CLIENT_SECRET = "s3cr:t/+ x"
+    reply = fake_response(200, {"access_token": "tok"})
+    with mock.patch("requests.post", return_value=reply) as post:
+        connector.login("the-code", None, "http://taiga/login")
+    data = post.call_args.kwargs["data"]
+    assert "client_secret" not in data
+    assert "client_id" not in data
+    # RFC 6749 2.3.1: both are form-urlencoded before going into the header
+    assert post.call_args.kwargs["auth"] == ("taiga", "s3cr%3At%2F%2B%20x")
+
+
+def test_token_auth_method_unknown_rejected(openid_settings):
+    openid_settings.OPENID_TOKEN_AUTH_METHOD = "private_key_jwt"
+    with mock.patch("requests.post") as post, pytest.raises(connector.OpenIDApiError):
+        connector.login("the-code", None, "http://taiga/login")
+    post.assert_not_called()

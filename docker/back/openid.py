@@ -28,6 +28,7 @@ if ENABLE_OPENID:
         "OPENID_FULLNAME_FIELD",
         "OPENID_EMAIL_FIELD",
         "OPENID_TIMEOUT",
+        "OPENID_TOKEN_AUTH_METHOD",
     ):
         if os.environ.get(_name, "").strip():
             globals()[_name] = os.environ[_name]
