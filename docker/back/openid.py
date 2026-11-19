@@ -36,6 +36,7 @@ if ENABLE_OPENID:
     for _name in (
         "OPENID_REQUIRE_VERIFIED_EMAIL",
         "OPENID_ALLOW_ACCESS_TOKEN",
+        "OPENID_REGISTER_ENABLED",
     ):
         if os.environ.get(_name, "").strip():
             globals()[_name] = os.environ[_name].strip().lower() in ("true", "1", "yes")

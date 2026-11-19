@@ -53,6 +53,7 @@ DEFAULTS = {
     "OPENID_ALLOW_ACCESS_TOKEN": False,
     "OPENID_TIMEOUT": 10,
     "OPENID_TOKEN_AUTH_METHOD": "client_secret_post",
+    "OPENID_REGISTER_ENABLED": None,  # unset: follow PUBLIC_REGISTER_ENABLED
 }
 
 HEADERS = {"Accept": "application/json", }

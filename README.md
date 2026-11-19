@@ -47,6 +47,7 @@ settings, and with `ENABLE_OPENID=True` it needs the plugin installed.
 | `OPENID_FILTER_FIELD` | | claim to filter on, e.g. `groups` (a list or a single string) |
 | `OPENID_FILTER` | | allowed values, comma separated, e.g. `taiga_users, taiga_admins` |
 | `OPENID_REQUIRE_VERIFIED_EMAIL` | `True` | link to an existing account only if the provider sends `email_verified: true` |
+| `OPENID_REGISTER_ENABLED` | `PUBLIC_REGISTER_ENABLED` | `True` creates accounts on the first OpenID login, `False` lets only existing users in |
 | `OPENID_TOKEN_AUTH_METHOD` | `client_secret_post` | `client_secret_basic` sends the client credentials as HTTP Basic auth |
 | `OPENID_TIMEOUT` | `10` | seconds to wait for the token and userinfo endpoints |
 | `OPENID_ALLOW_ACCESS_TOKEN` | `False` | accept an access token from the front (`/login?access_token=…`), see below |
@@ -56,8 +57,12 @@ The userinfo response must carry the id (`OPENID_ID_FIELD`) and email
 missing claim. Without a full name claim (Keycloak sends `name` only with the
 `profile` scope), the username is used.
 
-`PUBLIC_REGISTER_ENABLED=True` (upstream variable) lets the plugin create
-accounts on the first login; without it only existing users can sign in.
+The first OpenID login of someone without an account creates one if
+`OPENID_REGISTER_ENABLED=True`; with `False` only existing users can sign in.
+Unset, it follows `PUBLIC_REGISTER_ENABLED` (upstream variable), which also
+opens Taiga's own username/password sign-up: set `OPENID_REGISTER_ENABLED=True`
+and leave `PUBLIC_REGISTER_ENABLED` off to create accounts through the provider
+only.
 
 On the first OpenID login of a user whose email matches an existing Taiga
 account, the identity is linked to that account, but only if the provider marks
