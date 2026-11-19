@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from collections import namedtuple
 
 import requests
@@ -22,6 +23,8 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from taiga.base.connectors.exceptions import ConnectorBaseException
 from taiga.base.exceptions import AuthenticationFailed
+
+logger = logging.getLogger(__name__)
 
 
 class OpenIDApiError(ConnectorBaseException):
@@ -47,6 +50,7 @@ DEFAULTS = {
     "OPENID_EMAIL_FIELD": "email",
     "OPENID_REQUIRE_VERIFIED_EMAIL": True,
     "OPENID_ALLOW_ACCESS_TOKEN": False,
+    "OPENID_TIMEOUT": 10,
 }
 
 HEADERS = {"Accept": "application/json", }
@@ -77,11 +81,27 @@ def _json_or_none(response):
         return None
 
 
+def _request(method, url: str, **kwargs):
+    """
+    Call the provider within OPENID_TIMEOUT seconds: a provider that hangs or
+    cannot be reached must not hold the worker until gunicorn kills it.
+    """
+    timeout = float(_setting("OPENID_TIMEOUT"))
+    try:
+        return method(url, timeout=timeout, **kwargs)
+    except requests.Timeout:
+        error = f"the identity provider did not answer within {timeout:g} s"
+    except requests.RequestException as e:
+        error = f"the identity provider could not be reached ({e.__class__.__name__})"
+    logger.warning("OpenID: %s: %s", error, url)
+    raise OpenIDApiError({"error": error, "url": url})
+
+
 def _get(url: str, headers: dict) -> dict:
     """
     Make a GET call.
     """
-    response = requests.get(url, headers=headers)
+    response = _request(requests.get, url, headers=headers)
     data = _json_or_none(response)
     if response.status_code != 200 or not isinstance(data, dict):
         error = data.get("error", "") if isinstance(data, dict) else "response is not JSON"
@@ -94,7 +114,7 @@ def _post(url: str, params: dict, headers: dict) -> dict:
     """
     Make a POST call.
     """
-    response = requests.post(url, data=params, headers=headers)
+    response = _request(requests.post, url, data=params, headers=headers)
     data = _json_or_none(response)
     # The detail goes into Taiga's JSON error response: text only, never bytes.
     if not isinstance(data, dict):
