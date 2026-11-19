@@ -4,6 +4,16 @@
 
 Releases of robrotheram/taiga-contrib-openid-auth, kept for reference.
 
+## [1.0.3](https://github.com/mahahe-it/taiga-contrib-openid-auth/compare/1.0.2...1.0.3) (2026-11-19)
+
+
+### Bug Fixes
+
+* **back:** do not fail on import when the plugin is not installed ([#52](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/52)) ([6b31c8e](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/6b31c8ef42a513159572f3f6a38b54f2e6b671bd))
+* **back:** reject filter claims that are not strings ([#49](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/49)) ([bccd6c2](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/bccd6c2eaaf71d22e87151f25101b1e4ec6dafd2))
+* **back:** treat settings set to None or empty as unset ([#50](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/50)) ([70ba56a](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/70ba56a564ecc81d968d0d195b0ccbf296352d5d))
+* **images:** retry the front config after a failure and warn on missing settings ([#53](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/53)) ([de15502](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/de1550285a2197eadcd67323ee33ff20d84b8da5))
+
 ## [1.0.2](https://github.com/mahahe-it/taiga-contrib-openid-auth/compare/1.0.1...1.0.2) (2026-11-19)
 
 
