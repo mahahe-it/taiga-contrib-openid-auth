@@ -46,6 +46,7 @@ DEFAULTS = {
     "OPENID_FULLNAME_FIELD": "name",
     "OPENID_EMAIL_FIELD": "email",
     "OPENID_REQUIRE_VERIFIED_EMAIL": True,
+    "OPENID_ALLOW_ACCESS_TOKEN": False,
 }
 
 HEADERS = {"Accept": "application/json", }
@@ -142,6 +143,11 @@ def login(access_code: str, token: str, redirect_uri: str, headers: dict = HEADE
             "The OpenID Connect plugin isn't properly configured. Please contact your sysadmin.")})
 
     if token:
+        # Only the userinfo call checks the token, and it accepts a token issued
+        # to any client of the provider: off unless a reverse proxy needs it.
+        if not is_true(_setting("OPENID_ALLOW_ACCESS_TOKEN")):
+            raise AuthenticationFailed(_(
+                "Signing in with an access token is disabled (OPENID_ALLOW_ACCESS_TOKEN)."))
         return AuthInfo(access_token=token)
 
     params = {"grant_type": "authorization_code",

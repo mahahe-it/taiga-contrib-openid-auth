@@ -118,3 +118,10 @@ def test_callback_without_matching_state_rejected(new_page, state):
     victim.goto(f"{TAIGA_URL}/login?{query}")
     expect(victim.get_by_text(re.compile("does not match this login attempt"))).to_be_visible(timeout=30_000)
     assert stored_token(victim) is None
+
+
+def test_access_token_login_disabled_by_default(page: Page):
+    """A token from the URL is not Taiga's to trust: any client's token would do, and no state."""
+    page.goto(f"{TAIGA_URL}/login?access_token=someone-elses-token")
+    expect(page.get_by_text(re.compile("OPENID_ALLOW_ACCESS_TOKEN"))).to_be_visible(timeout=30_000)
+    assert stored_token(page) is None

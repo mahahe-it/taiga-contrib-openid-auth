@@ -43,7 +43,15 @@ def test_login_posts_code_to_token_url(openid_settings):
     assert data["scope"] == "openid email profile"
 
 
-def test_login_with_access_token_skips_token_call(openid_settings):
+def test_login_with_access_token_disabled_by_default(openid_settings):
+    with mock.patch("requests.post") as post, pytest.raises(AuthenticationFailed, match="OPENID_ALLOW_ACCESS_TOKEN"):
+        connector.login(None, "given-token", "http://taiga/login")
+    post.assert_not_called()
+
+
+@pytest.mark.parametrize("value", [True, "True"])
+def test_login_with_access_token_skips_token_call(openid_settings, value):
+    openid_settings.OPENID_ALLOW_ACCESS_TOKEN = value
     with mock.patch("requests.post") as post:
         auth = connector.login(None, "given-token", "http://taiga/login")
     assert auth.access_token == "given-token"

@@ -29,6 +29,7 @@ def openid_settings(settings):
         "OPENID_FULLNAME_FIELD",
         "OPENID_EMAIL_FIELD",
         "OPENID_REQUIRE_VERIFIED_EMAIL",
+        "OPENID_ALLOW_ACCESS_TOKEN",
     ):
         if hasattr(settings, name):
             delattr(settings, name)
