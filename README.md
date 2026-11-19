@@ -47,6 +47,7 @@ settings, and with `ENABLE_OPENID=True` it needs the plugin installed.
 | `OPENID_FILTER_FIELD` | | claim to filter on, e.g. `groups` (a list or a single string) |
 | `OPENID_FILTER` | | allowed values, comma separated, e.g. `taiga_users, taiga_admins` |
 | `OPENID_REQUIRE_VERIFIED_EMAIL` | `True` | link to an existing account only if the provider sends `email_verified: true` |
+| `OPENID_TOKEN_AUTH_METHOD` | `client_secret_post` | `client_secret_basic` sends the client credentials as HTTP Basic auth |
 | `OPENID_TIMEOUT` | `10` | seconds to wait for the token and userinfo endpoints |
 | `OPENID_ALLOW_ACCESS_TOKEN` | `False` | accept an access token from the front (`/login?access_token=…`), see below |
 

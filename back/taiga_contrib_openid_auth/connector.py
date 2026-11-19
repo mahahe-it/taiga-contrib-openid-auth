@@ -17,6 +17,7 @@
 
 import logging
 from collections import namedtuple
+from urllib.parse import quote
 
 import requests
 from django.conf import settings
@@ -51,6 +52,7 @@ DEFAULTS = {
     "OPENID_REQUIRE_VERIFIED_EMAIL": True,
     "OPENID_ALLOW_ACCESS_TOKEN": False,
     "OPENID_TIMEOUT": 10,
+    "OPENID_TOKEN_AUTH_METHOD": "client_secret_post",
 }
 
 HEADERS = {"Accept": "application/json", }
@@ -118,11 +120,11 @@ def _get(url: str, headers: dict) -> dict:
     return data
 
 
-def _post(url: str, params: dict, headers: dict) -> dict:
+def _post(url: str, params: dict, headers: dict, auth: tuple | None = None) -> dict:
     """
     Make a POST call.
     """
-    response = _request(requests.post, url, data=params, headers=headers)
+    response = _request(requests.post, url, data=params, headers=headers, auth=auth)
     data = _json_or_none(response)
     # The detail goes into Taiga's JSON error response: text only, never bytes.
     if not isinstance(data, dict):
@@ -198,12 +200,22 @@ def login(access_code: str, token: str, redirect_uri: str, headers: dict = HEADE
 
     params = {"grant_type": "authorization_code",
               "code": access_code,
-              "client_id": client_id,
-              "client_secret": client_secret,
               "redirect_uri": redirect_uri,
               "scope": _setting("OPENID_SCOPE"),
               }
-    data = _post(_setting("OPENID_TOKEN_URL"), params=params, headers=headers)
+    # How the client authenticates (OpenID Connect Core 9): credentials in the
+    # body, or HTTP Basic with both form-urlencoded first (RFC 6749 2.3.1).
+    auth_method = _setting("OPENID_TOKEN_AUTH_METHOD")
+    auth = None
+    if auth_method == "client_secret_post":
+        params.update(client_id=client_id, client_secret=client_secret)
+    elif auth_method == "client_secret_basic":
+        auth = (quote(client_id, safe=""), quote(client_secret, safe=""))
+    else:
+        raise OpenIDApiError({"error_message": _(
+            "The OpenID Connect plugin isn't properly configured. Please contact your sysadmin."),
+            "error": f"unsupported OPENID_TOKEN_AUTH_METHOD '{auth_method}'"})
+    data = _post(_setting("OPENID_TOKEN_URL"), params=params, headers=headers, auth=auth)
     return AuthInfo(access_token=data.get("access_token", None))
 
 

@@ -31,6 +31,7 @@ def openid_settings(settings):
         "OPENID_REQUIRE_VERIFIED_EMAIL",
         "OPENID_ALLOW_ACCESS_TOKEN",
         "OPENID_TIMEOUT",
+        "OPENID_TOKEN_AUTH_METHOD",
     ):
         if hasattr(settings, name):
             delattr(settings, name)
