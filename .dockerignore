@@ -1,0 +1,12 @@
+# Build context of docker/back and docker/front (the repo root): only what
+# their COPY lines use, without local build output and dependencies, so local
+# images are built like CI's (npm ci, not the host's front/node_modules).
+*
+!back/
+!front/
+!docker/
+**/node_modules
+**/dist
+**/build
+**/__pycache__
+**/*.egg-info
