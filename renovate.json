@@ -1,0 +1,105 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits"
+  ],
+  "timezone": "Europe/Rome",
+  "labels": [
+    "dependencies"
+  ],
+  "prHourlyLimit": 0,
+  "pre-commit": {
+    "enabled": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Versions annotated with a '# renovate:' comment on the line above",
+      "managerFilePatterns": [
+        "/^\\.devcontainer/Dockerfile$/",
+        "/^\\.github/workflows/[^/]+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?\\s+(?:ARG )?\\w+(?:=|: )\"?(?<currentValue>[^\"\\s]+)\"?"
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Taiga base images: a patch ships as a plugin patch release",
+      "matchFileNames": [
+        "docker/**"
+      ],
+      "matchPackageNames": [
+        "docker.io/taigaio/taiga-back",
+        "docker.io/taigaio/taiga-front"
+      ],
+      "groupName": "taiga base images",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "description": "A new Taiga minor ships as a plugin minor release",
+      "matchFileNames": [
+        "docker/**"
+      ],
+      "matchPackageNames": [
+        "docker.io/taigaio/taiga-back",
+        "docker.io/taigaio/taiga-front"
+      ],
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "semanticCommitType": "feat"
+    },
+    {
+      "description": "A new Taiga major waits for approval on the Dependency Dashboard",
+      "matchFileNames": [
+        "docker/**"
+      ],
+      "matchPackageNames": [
+        "docker.io/taigaio/taiga-back",
+        "docker.io/taigaio/taiga-front"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true,
+      "semanticCommitType": "feat"
+    },
+    {
+      "description": "The front build (node image, npm packages) changes the shipped plugin",
+      "matchFileNames": [
+        "docker/front/Dockerfile",
+        "front/**"
+      ],
+      "matchPackageNames": [
+        "!docker.io/taigaio/taiga-front"
+      ],
+      "groupName": "front build",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "description": "e2e stack: tests only, no release",
+      "matchFileNames": [
+        "e2e/**"
+      ],
+      "groupName": "e2e stack",
+      "semanticCommitType": "test",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "description": "Toolbox, hooks and CI tooling: one grouped PR, no release",
+      "matchFileNames": [
+        ".devcontainer/**",
+        ".github/workflows/**",
+        ".pre-commit-config.yaml"
+      ],
+      "groupName": "toolbox and CI",
+      "semanticCommitType": "ci",
+      "semanticCommitScope": "deps"
+    }
+  ]
+}

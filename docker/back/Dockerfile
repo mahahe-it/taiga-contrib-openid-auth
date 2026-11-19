@@ -1,4 +1,3 @@
-# renovate: datasource=docker depName=taigaio/taiga-back
 ARG TAIGA_BACK_VERSION=6.10.2
 FROM docker.io/taigaio/taiga-back:${TAIGA_BACK_VERSION} AS base
 COPY back/ /tmp/taiga-contrib-openid-auth/

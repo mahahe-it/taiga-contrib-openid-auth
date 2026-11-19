@@ -1,5 +1,4 @@
 # Playwright runner of the e2e stack (browsers are in the base image).
-# renovate: datasource=docker depName=mcr.microsoft.com/playwright/python
 FROM mcr.microsoft.com/playwright/python:v1.65.2-noble
 WORKDIR /e2e
 COPY requirements.txt .

@@ -1,6 +1,4 @@
-# renovate: datasource=docker depName=node
 ARG NODE_VERSION=26.13.1-alpine
-# renovate: datasource=docker depName=taigaio/taiga-front
 ARG TAIGA_FRONT_VERSION=6.10.3
 
 # The plugin's dist/ (Coffee/Jade through gulp), never committed
