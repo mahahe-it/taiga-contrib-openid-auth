@@ -141,7 +141,14 @@ def _check_filter(data: dict) -> None:
     if claim is None:
         raise AuthenticationFailed(f"OPENID_FILTER_CLAIM provided but '{filter_field}' not found in UserInfo")
 
-    claim_values = {claim} if isinstance(claim, str) else set(claim)
+    if isinstance(claim, str):
+        claim_values = {claim}
+    elif isinstance(claim, list) and all(isinstance(value, str) for value in claim):
+        claim_values = set(claim)
+    else:
+        raise AuthenticationFailed(
+            f"OPENID_FILTER_FIELD '{filter_field}' must be a string or a list of strings, "
+            f"not {type(claim).__name__}")
     allowed = {value.strip() for value in _setting("OPENID_FILTER").split(",") if value.strip()}
     if not allowed & claim_values:
         raise AuthenticationFailed("User does not satisfy OPENID_FILTER")
