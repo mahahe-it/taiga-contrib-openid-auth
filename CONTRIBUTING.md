@@ -22,6 +22,10 @@ common tasks:
 
 | Recipe | What it does |
 |---|---|
+| `just build` | build both images (`BACK_IMAGE` / `FRONT_IMAGE` override the local names) |
+| `just test-back` | back unit tests, inside the back image's `test` stage |
+| `just test-images` | tests of the built images: generated `conf.json`, served plugin, settings |
+| `just e2e` | OpenID login end to end: Taiga, Keycloak and a Playwright browser in compose (`E2E_KEEP=1` leaves the stack up, logs and traces in `e2e/results`) |
 | `just precommit` | every pre-commit hook on the whole tree |
 | `just hooks` | install the git pre-commit hook |
 | `just shell` | a shell in the toolbox |
@@ -46,3 +50,6 @@ A breaking change also needs a note in the README on how to upgrade. Do not
 bump versions by hand: release-please keeps a release PR open with the next
 version and its `CHANGELOG.md`. Commits on `main` must be signed. A bug fix
 comes with the test that would have caught it.
+
+CI runs pre-commit, the unit and image tests and the end-to-end test on every
+pull request; all of them must pass before merging.
