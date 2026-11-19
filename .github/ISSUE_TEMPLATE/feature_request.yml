@@ -1,6 +1,6 @@
 name: Feature request
 description: Something the plugin or the images do not let you do today
-labels: ["Enhancement"]
+labels: ["type: feature"]
 body:
   - type: textarea
     id: problem
