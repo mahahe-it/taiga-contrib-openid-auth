@@ -167,3 +167,23 @@ def test_invited_user_joins_project(page: Page):
         f"{API_URL}/projects", params={"member": erin["id"]}, headers={"Authorization": f"Bearer {token}"}, timeout=10
     ).json()
     assert project_id in [p["id"] for p in member_of]
+
+
+def test_login_under_subpath(page: Page):
+    """TAIGA_SUBPATH: every file of the plugin is requested from under the subpath.
+
+    The stack also serves Taiga at /, so a request outside the subpath would
+    still succeed here: the requested URLs are what the test checks.
+    """
+    requested = []
+    page.on("request", lambda request: requested.append(request.url) if "openid" in request.url else None)
+    page.goto(f"{TAIGA_URL}/taiga/login")
+    expect(page.get_by_text(f"Sign in with {OPENID_NAME}")).to_be_visible(timeout=30_000)
+    assert page.locator("a.button-auth img").evaluate("img => img.complete && img.naturalWidth > 0")
+    plugin_files = [url for url in requested if "/plugins/openid-auth/" in url]
+    assert any(url.endswith("/openid-auth.js") for url in plugin_files)
+    assert any(url.endswith("/openid.png") for url in plugin_files)
+    assert all(url.startswith(f"{TAIGA_URL}/taiga/plugins/") for url in plugin_files), plugin_files
+
+    openid_login(page, "alice", path="/taiga/login")
+    assert api_me(wait_for_token(page))["username"] == "alice"

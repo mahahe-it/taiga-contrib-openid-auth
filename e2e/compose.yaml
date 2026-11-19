@@ -97,6 +97,20 @@ services:
       OPENID_NAME: Keycloak E2E
       OPENID_SCOPE: openid email profile
 
+  # The same front under a subpath, behind the gateway at /taiga/
+  taiga-front-subpath:
+    image: ${FRONT_IMAGE:?set FRONT_IMAGE}
+    environment:
+      TAIGA_URL: http://taiga-gateway
+      TAIGA_WEBSOCKETS_URL: ws://taiga-gateway
+      TAIGA_SUBPATH: /taiga
+      PUBLIC_REGISTER_ENABLED: "true"
+      ENABLE_OPENID: "true"
+      OPENID_URL: http://keycloak:8080/realms/taiga/protocol/openid-connect/auth
+      OPENID_CLIENT_ID: taiga
+      OPENID_NAME: Keycloak E2E
+      OPENID_SCOPE: openid email profile
+
   taiga-events:
     image: docker.io/taigaio/taiga-events:6.10.0
     environment:
@@ -126,6 +140,8 @@ services:
       - taiga-media-data:/taiga/media
     depends_on:
       taiga-front:
+        condition: service_started
+      taiga-front-subpath:
         condition: service_started
       taiga-back:
         condition: service_healthy
