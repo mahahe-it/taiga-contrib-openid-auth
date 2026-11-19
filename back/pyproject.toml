@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "taiga-contrib-openid-auth"
 # Bumped by release-please, never by hand.
-version = "1.0.1"
+version = "1.0.2"
 description = "OpenID Connect login for Taiga"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]

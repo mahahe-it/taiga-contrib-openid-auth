@@ -4,6 +4,16 @@
 
 Releases of robrotheram/taiga-contrib-openid-auth, kept for reference.
 
+## [1.0.2](https://github.com/mahahe-it/taiga-contrib-openid-auth/compare/1.0.1...1.0.2) (2026-11-19)
+
+
+### Bug Fixes
+
+* **back:** refuse missing userinfo claims instead of failing with a 500 ([#46](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/46)) ([ae571b7](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/ae571b789eb33620f96427c7c1fe62a1d9912c63))
+* **back:** time out requests to the identity provider ([#47](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/47)) ([04b0d05](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/04b0d0560cea5062d055b6552634bfc491aa59a4))
+* **front:** accept the invitation when signing in from it ([#43](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/43)) ([de1618b](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/de1618b20a2cf34010be1fecc1b43a0decf5b981))
+* **front:** load the plugin script and image under TAIGA_SUBPATH ([#45](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/45)) ([d24dff7](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/d24dff708cd87f16bdb3807c7e1253fd1b0616df))
+
 ## [1.0.1](https://github.com/mahahe-it/taiga-contrib-openid-auth/compare/1.0.0...1.0.1) (2026-11-19)
 
 
