@@ -4,6 +4,15 @@
 
 Releases of robrotheram/taiga-contrib-openid-auth, kept for reference.
 
+## [1.0.1](https://github.com/mahahe-it/taiga-contrib-openid-auth/compare/1.0.0...1.0.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* **back:** link to an existing account only if the email is verified ([#41](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/41)) ([9a2f709](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/9a2f7091e98283f891e5e4f489d8fb38345863a1))
+* **back:** make access token login opt-in ([#42](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/42)) ([68f2cba](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/68f2cba26e6dac51fde4129e23be8a2afa261720))
+* **front:** send and verify the OAuth state on login ([#39](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/39)) ([7f0c7be](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/7f0c7bef50c55bddb3b221ce7e133a7548ee2c0b))
+
 ## 1.0.0 (2026-11-19)
 
 
