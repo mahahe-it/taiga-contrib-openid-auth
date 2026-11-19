@@ -15,13 +15,17 @@ every upstream variable and customisation keeps working:
 
 | Image | Base | Tags |
 |---|---|---|
-| `ghcr.io/mahahe-it/taiga-back-openid` | `taigaio/taiga-back:6.10.2` | `6.10.2`, `6.10.2-openid.<version>` |
-| `ghcr.io/mahahe-it/taiga-front-openid` | `taigaio/taiga-front:6.10.3` | `6.10.3`, `6.10.3-openid.<version>` |
+| [`ghcr.io/mahahe-it/taiga-back-openid`](https://github.com/orgs/mahahe-it/packages/container/package/taiga-back-openid) | `taigaio/taiga-back` | `<base>`, `<base>-openid.<version>` |
+| [`ghcr.io/mahahe-it/taiga-front-openid`](https://github.com/orgs/mahahe-it/packages/container/package/taiga-front-openid) | `taigaio/taiga-front` | `<base>`, `<base>-openid.<version>` |
 
 Each image is tagged with the version of its own base (taigaio versions back and
-front independently). `<base>` moves to the newest plugin release built on that
-base; `<base>-openid.<version>` never changes. There is no `latest`. Every plugin
-release rebuilds both images. Images are `linux/amd64`, like their bases.
+front independently): `TAIGA_BACK_VERSION` in
+[`docker/back/Dockerfile`](docker/back/Dockerfile) and `TAIGA_FRONT_VERSION` in
+[`docker/front/Dockerfile`](docker/front/Dockerfile), kept current by Renovate;
+the package pages list the published tags. `<base>` moves to the newest plugin
+release built on that base; `<base>-openid.<version>` never changes. There is no
+`latest`. Every plugin release rebuilds both images. Images are `linux/amd64`,
+like their bases.
 
 Use the back image for **taiga-back and taiga-async**: async loads the same
 settings, and with `ENABLE_OPENID=True` it needs the plugin installed.
