@@ -26,4 +26,3 @@ class TaigaContribOpenidAuthAppConfig(AppConfig):
         from taiga.auth.services import register_auth_plugin
         from . import services
         register_auth_plugin("openid", services.openid_login_func)
-

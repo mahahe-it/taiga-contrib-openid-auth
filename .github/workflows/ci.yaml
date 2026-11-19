@@ -1,0 +1,44 @@
+name: CI
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+# pull_request (not pull_request_target): PR code never runs with write
+# tokens, and secrets are only available to branches of this repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # renovate: datasource=pypi depName=pre-commit
+  PRE_COMMIT_VERSION: 4.7.0
+
+jobs:
+  pr-title:
+    # Squash merges use the PR title as the commit release-please reads
+    name: PR Title
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6.1.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.13"
+
+      - name: Run every hook
+        run: |
+          pip install "pre-commit==${PRE_COMMIT_VERSION}"
+          pre-commit run --all-files --show-diff-on-failure

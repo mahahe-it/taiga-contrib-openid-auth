@@ -156,17 +156,17 @@ def get_user_profile(headers: dict = HEADERS):
         username = data.get(USER_FIELD, None)
 
     elif data.get("preferred_username", None) != None :
-        username = data.get("preferred_username", None) 
+        username = data.get("preferred_username", None)
 
     elif data.get("full_name", None) != None :
-        username = data.get("full_name", None) 
+        username = data.get("full_name", None)
 
     elif data.get("username", None) != None :
         username = data.get("username", None)
 
     elif data.get("email", None) != None :
         username = data.get("email", None)
-    
+
     user =  User(id=data.get(ID_FIELD, None),
                 username=username,
                 full_name=data.get(NAME_FIELD, None),
