@@ -2,7 +2,8 @@
 
 import json
 
-from conftest import CONF
+import pytest
+from conftest import CONF, cli
 
 PLUGIN_ENTRY = "plugins/openid-auth/openid-auth.json"
 ENABLED = {
@@ -55,3 +56,18 @@ def test_plugin_files_served(start_front):
     assert plugin["module"] == "taigaContrib.openidAuth"
     js = container.exec("wget", "-qO-", "http://127.0.0.1/plugins/openid-auth/openid-auth.js").stdout
     assert "taigaContrib.openidAuth" in js
+
+
+@pytest.mark.parametrize("missing", ["OPENID_URL", "OPENID_CLIENT_ID"])
+def test_enabled_without_required_setting_warns(start_front, missing):
+    container = start_front({key: value for key, value in ENABLED.items() if key != missing})
+    assert f"openid-auth: warning: ENABLE_OPENID=true but {missing} is empty" in container.logs()
+
+
+def test_failed_config_keeps_marker(start_front, tmp_path):
+    """If extending conf.json fails, the next start must try again."""
+    # Upstream's template writes DEBUG unquoted: this makes conf.json invalid JSON.
+    container = start_front({**ENABLED, "DEBUG": "oops"}, wait=False)
+    assert container.wait_exit() != 0
+    result = cli("cp", f"{container.name}:/tmp/openid-conf-generated", str(tmp_path / "marker"), check=False)
+    assert result.returncode == 0, result.stderr
