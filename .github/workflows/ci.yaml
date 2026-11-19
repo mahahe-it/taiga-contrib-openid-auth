@@ -1,7 +1,9 @@
 name: CI
+# The PR title check is in pr-title.yaml: edits to a PR (release-please
+# rewrites its body) must not start, and cancel, runs of the code checks.
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened]
+    types: [opened, synchronize, reopened]
 
 # pull_request (not pull_request_target): PR code never runs with write
 # tokens, and secrets are only available to branches of this repository.
@@ -19,17 +21,6 @@ env:
   PYTEST_VERSION: 9.2.0
 
 jobs:
-  pr-title:
-    # Squash merges use the PR title as the commit release-please reads
-    name: PR Title
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: read
-    steps:
-      - uses: amannn/action-semantic-pull-request@v6.1.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   pre-commit:
     name: pre-commit
     runs-on: ubuntu-latest

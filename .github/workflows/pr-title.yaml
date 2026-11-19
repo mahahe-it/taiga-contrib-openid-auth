@@ -1,0 +1,23 @@
+name: PR Title
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+# pull_request (not pull_request_target): PR code never runs with write tokens.
+permissions:
+  contents: read
+
+# No concurrency group: it would cancel pending runs, and a cancelled run
+# leaves a failed check suite on the PR's head commit. The check takes seconds.
+
+jobs:
+  pr-title:
+    # Squash merges use the PR title as the commit release-please reads
+    name: PR Title
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6.1.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
