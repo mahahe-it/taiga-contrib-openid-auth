@@ -220,3 +220,16 @@ def test_provider_unreachable_is_an_api_error(openid_settings, error, text):
     assert body["url"] == "https://idp.example.test/token"
     with mock.patch("requests.get", side_effect=error), pytest.raises(connector.OpenIDApiError):
         connector.get_user_profile(headers={})
+
+
+@pytest.mark.parametrize(
+    ("claim", "type_name"),
+    [(1, "int"), (True, "bool"), ([{"name": "taiga_users"}], "list"), ({"taiga_users": True}, "dict"), (["taiga_users", 1], "list")],
+)
+def test_filter_claim_of_other_types_rejected(openid_settings, claim, type_name):
+    openid_settings.OPENID_FILTER = "taiga_users"
+    openid_settings.OPENID_FILTER_FIELD = "groups"
+    with pytest.raises(AuthenticationFailed) as excinfo:
+        profile({**USERINFO, "groups": claim})
+    assert "a string or a list of strings" in str(excinfo.value.detail)
+    assert type_name in str(excinfo.value.detail)
