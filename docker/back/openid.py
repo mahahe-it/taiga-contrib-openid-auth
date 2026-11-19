@@ -26,6 +26,7 @@ if ENABLE_OPENID:
         "OPENID_USERNAME_FIELD",
         "OPENID_FULLNAME_FIELD",
         "OPENID_EMAIL_FIELD",
+        "OPENID_TIMEOUT",
     ):
         if _name in os.environ:
             globals()[_name] = os.environ[_name]

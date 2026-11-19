@@ -4,6 +4,7 @@ import json
 from unittest import mock
 
 import pytest
+import requests
 from conftest import fake_response
 from taiga.base.api.renderers import UnicodeJSONRenderer
 from taiga.base.exceptions import AuthenticationFailed, format_exception
@@ -188,3 +189,34 @@ def test_non_string_claims_become_strings(openid_settings):
     user = profile({**USERINFO, "sub": 42, "preferred_username": 7})
     assert user.id == "42"
     assert user.username == "7"
+
+
+def test_requests_have_default_timeout(openid_settings):
+    reply = fake_response(200, {"access_token": "tok"})
+    with mock.patch("requests.post", return_value=reply) as post:
+        connector.login("code", None, "http://taiga/login")
+    with mock.patch("requests.get", return_value=fake_response(200, USERINFO)) as get:
+        connector.get_user_profile(headers={})
+    assert post.call_args.kwargs["timeout"] == 10
+    assert get.call_args.kwargs["timeout"] == 10
+
+
+def test_timeout_from_settings(openid_settings):
+    openid_settings.OPENID_TIMEOUT = "2.5"
+    with mock.patch("requests.get", return_value=fake_response(200, USERINFO)) as get:
+        connector.get_user_profile(headers={})
+    assert get.call_args.kwargs["timeout"] == 2.5
+
+
+@pytest.mark.parametrize(
+    ("error", "text"),
+    [(requests.Timeout("read timed out"), "did not answer within 10"), (requests.ConnectionError("refused"), "could not be reached")],
+)
+def test_provider_unreachable_is_an_api_error(openid_settings, error, text):
+    with mock.patch("requests.post", side_effect=error), pytest.raises(connector.OpenIDApiError) as excinfo:
+        connector.login("code", None, "http://taiga/login")
+    body = rendered(excinfo.value)
+    assert text in body["error"]
+    assert body["url"] == "https://idp.example.test/token"
+    with mock.patch("requests.get", side_effect=error), pytest.raises(connector.OpenIDApiError):
+        connector.get_user_profile(headers={})
