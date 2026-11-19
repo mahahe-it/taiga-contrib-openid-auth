@@ -4,6 +4,16 @@
 
 Releases of robrotheram/taiga-contrib-openid-auth, kept for reference.
 
+## [1.1.0](https://github.com/mahahe-it/taiga-contrib-openid-auth/compare/1.0.4...1.1.0) (2026-11-19)
+
+
+### Features
+
+* **back:** allow OpenID sign-up without public registration ([#64](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/64)) ([fbacf02](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/fbacf027538e41cd1048ae6c296634b43be3c8b5))
+* **back:** support client_secret_basic at the token endpoint ([#62](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/62)) ([cadbddf](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/cadbddf7725a1ad63b084ac9410166c0ae19c002))
+* **front:** end the provider session on logout ([#66](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/66)) ([dbd88ac](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/dbd88acc83ff856c008cd6fddd73cd31b34bd34c))
+* **images:** option to hide the username/password login form ([#65](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/65)) ([3f3ac3a](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/3f3ac3a20d262d366907fe2e85d85c0825f41f41))
+
 ## [1.0.4](https://github.com/mahahe-it/taiga-contrib-openid-auth/compare/1.0.3...1.0.4) (2026-11-19)
 
 
