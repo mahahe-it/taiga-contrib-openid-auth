@@ -1,0 +1,64 @@
+{
+  "realm": "taiga",
+  "enabled": true,
+  "sslRequired": "none",
+  "groups": [{"name": "taiga_users"}],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@example.test",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "E2E",
+      "credentials": [{"type": "password", "value": "e2e", "temporary": false}],
+      "groups": ["/taiga_users"]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "email": "bob@example.test",
+      "emailVerified": true,
+      "firstName": "Bob",
+      "lastName": "E2E",
+      "credentials": [{"type": "password", "value": "e2e", "temporary": false}]
+    },
+    {
+      "username": "carol",
+      "enabled": true,
+      "email": "carol@example.test",
+      "emailVerified": true,
+      "firstName": "Carol",
+      "lastName": "E2E",
+      "credentials": [{"type": "password", "value": "e2e", "temporary": false}],
+      "groups": ["/taiga_users"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "taiga",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "e2e-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://taiga-gateway/*"],
+      "webOrigins": ["+"],
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "full.path": "false",
+            "claim.name": "groups",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

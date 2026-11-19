@@ -13,6 +13,9 @@ in_container := if path_exists("/run/.containerenv") == "true" { "true" } else i
 # the same tools from other toolboxes.
 tb := if in_container == "true" { "" } else { "distrobox enter -n " + box + " -- env PATH=/usr/local/bin:/usr/bin:/bin" }
 cli := env("CONTAINER_CLI", if in_container == "true" { "docker" } else { "podman" })
+back_image := env("BACK_IMAGE", "localhost/taiga-back-openid:dev")
+front_image := env("FRONT_IMAGE", "localhost/taiga-front-openid:dev")
+compose := cli + " compose -f e2e/compose.yaml"
 
 _default:
     @just --list
@@ -50,3 +53,28 @@ shell:
 # Run every pre-commit hook on the whole tree
 precommit:
     {{ tb }} pre-commit run --all-files
+
+# Build both images (BACK_IMAGE / FRONT_IMAGE override the local names)
+build:
+    {{ cli }} build -f docker/back/Dockerfile -t {{ back_image }} .
+    {{ cli }} build -f docker/front/Dockerfile -t {{ front_image }} .
+
+# End-to-end login test against Keycloak on the images from `just build`.
+# Leaves the stack up when E2E_KEEP=1; logs and traces go to e2e/results.
+e2e *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export BACK_IMAGE={{ back_image }} FRONT_IMAGE={{ front_image }}
+    rm -rf e2e/results && mkdir -p e2e/results
+    cleanup() {
+        {{ compose }} logs --no-color > e2e/results/compose.log 2>&1 || true
+        [ "${E2E_KEEP:-0}" = 1 ] || {{ compose }} --profile test down -v --remove-orphans
+    }
+    trap cleanup EXIT
+    {{ compose }} up -d --wait --wait-timeout 600
+    {{ compose }} exec -T \
+        -e DJANGO_SUPERUSER_USERNAME=admin \
+        -e DJANGO_SUPERUSER_EMAIL=admin@example.test \
+        -e DJANGO_SUPERUSER_PASSWORD=e2e-admin \
+        taiga-back python manage.py createsuperuser --noinput
+    {{ compose }} --profile test run --rm --build e2e {{ args }}
