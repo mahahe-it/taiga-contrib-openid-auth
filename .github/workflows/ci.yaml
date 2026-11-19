@@ -19,6 +19,9 @@ env:
   PRE_COMMIT_VERSION: 4.7.0
   # renovate: datasource=pypi depName=pytest
   PYTEST_VERSION: 9.2.0
+  # Same as .devcontainer/Dockerfile
+  # renovate: datasource=github-releases depName=casey/just
+  JUST_VERSION: 1.59.0
 
 jobs:
   pre-commit:
@@ -137,6 +140,8 @@ jobs:
         run: for tar in "$RUNNER_TEMP"/images/*.tar; do docker load -i "$tar"; done
 
       - uses: extractions/setup-just@v4
+        with:
+          just-version: ${{ env.JUST_VERSION }}
 
       - name: OpenID login against Keycloak
         run: just e2e
