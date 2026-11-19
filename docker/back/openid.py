@@ -13,7 +13,8 @@ if ENABLE_OPENID:
     if "taiga_contrib_openid_auth" not in INSTALLED_APPS:
         INSTALLED_APPS += ["taiga_contrib_openid_auth"]
 
-    # Only variables that are set: the plugin's defaults apply to the others.
+    # Only variables that are set and not empty: the plugin's defaults apply
+    # to the others (Helm charts often render unset values as "").
     for _name in (
         "OPENID_USER_URL",
         "OPENID_TOKEN_URL",
@@ -28,12 +29,12 @@ if ENABLE_OPENID:
         "OPENID_EMAIL_FIELD",
         "OPENID_TIMEOUT",
     ):
-        if _name in os.environ:
+        if os.environ.get(_name, "").strip():
             globals()[_name] = os.environ[_name]
 
     for _name in (
         "OPENID_REQUIRE_VERIFIED_EMAIL",
         "OPENID_ALLOW_ACCESS_TOKEN",
     ):
-        if _name in os.environ:
+        if os.environ.get(_name, "").strip():
             globals()[_name] = os.environ[_name].strip().lower() in ("true", "1", "yes")

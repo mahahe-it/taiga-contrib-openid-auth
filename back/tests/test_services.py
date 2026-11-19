@@ -25,3 +25,10 @@ def test_unverified_email_refused_when_required(openid_settings, value):
     openid_settings.OPENID_REQUIRE_VERIFIED_EMAIL = value
     with pytest.raises(AuthenticationFailed):
         services.check_email_link(False)
+
+
+@pytest.mark.parametrize("unset", [None, ""])
+def test_unset_require_verified_email_keeps_default(openid_settings, unset):
+    openid_settings.OPENID_REQUIRE_VERIFIED_EMAIL = unset
+    with pytest.raises(AuthenticationFailed):
+        services.check_email_link(False)

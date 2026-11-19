@@ -64,7 +64,15 @@ User = namedtuple("User", ["id", "username", "full_name", "email", "email_verifi
 
 
 def _setting(name: str):
-    return getattr(settings, name, DEFAULTS[name])
+    """
+    A setting, or its default when unset. None and "" count as unset: old-style
+    config.py files set every variable with os.getenv, and Helm charts often
+    render unset values as empty strings.
+    """
+    value = getattr(settings, name, None)
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return DEFAULTS[name]
+    return value
 
 
 def is_true(value) -> bool:

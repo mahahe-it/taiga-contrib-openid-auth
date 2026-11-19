@@ -91,3 +91,10 @@ def test_mounted_config_already_adding_the_app(tmp_path):
         config.write('\nINSTALLED_APPS += ["taiga_contrib_openid_auth"]\n')
     loaded = load_settings({"ENABLE_OPENID": "True", **ALL_VARS}, cwd=str(tmp_path))
     assert loaded["installed"] is True
+
+
+@pytest.mark.parametrize("name", ["OPENID_SCOPE", "OPENID_FILTER_FIELD", *BOOL_VARS])
+def test_empty_env_keeps_connector_default(name):
+    """Helm charts often render unset values as empty strings."""
+    loaded = load_settings({"ENABLE_OPENID": "True", name: ""})
+    assert loaded["defined"][name] is False
