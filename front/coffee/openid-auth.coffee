@@ -97,6 +97,8 @@ OpenIDLoginButtonDirective = ($window, $params, $location, $config, $events, $co
 					loginOnError({data: {_error_message: STATE_ERROR}})
 					return
 				data = {code: code, url:redirectURL()}
+				# On /invitation/:token, the account (new or linked) accepts that invitation
+				data.token = $params.token if $params.token
 			else
 				data = {access_token: accessToken, url:redirectURL()}
 

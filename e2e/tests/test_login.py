@@ -5,7 +5,17 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 import requests
-from conftest import API_URL, OPENID_NAME, TAIGA_URL, api_me, openid_login, stored_token, wait_for_token
+from conftest import (
+    API_URL,
+    OPENID_NAME,
+    TAIGA_URL,
+    admin_token,
+    api_me,
+    db_query,
+    openid_login,
+    stored_token,
+    wait_for_token,
+)
 from playwright.sync_api import Page, expect
 
 
@@ -125,3 +135,35 @@ def test_access_token_login_disabled_by_default(page: Page):
     page.goto(f"{TAIGA_URL}/login?access_token=someone-elses-token")
     expect(page.get_by_text(re.compile("OPENID_ALLOW_ACCESS_TOKEN"))).to_be_visible(timeout=30_000)
     assert stored_token(page) is None
+
+
+def test_invited_user_joins_project(page: Page):
+    """Sign up with OpenID from an invitation: the membership is the new user's."""
+    admin = {"Authorization": f"Bearer {admin_token()}"}
+    # Taiga only lets a verified user invite; the superuser from manage.py is not.
+    db_query("UPDATE users_user SET verified_email = true WHERE username = 'admin'")
+    project = requests.post(
+        f"{API_URL}/projects", json={"name": "Invitation E2E", "description": "e2e"}, headers=admin, timeout=30
+    )
+    project.raise_for_status()
+    project_id = project.json()["id"]
+    role_id = requests.get(f"{API_URL}/roles", params={"project": project_id}, headers=admin, timeout=10).json()[0]["id"]
+    invite = requests.post(
+        f"{API_URL}/memberships/bulk_create",
+        json={"project_id": project_id, "bulk_memberships": [{"role_id": role_id, "username": "erin@example.test"}]},
+        headers=admin,
+        timeout=30,
+    )
+    invite.raise_for_status()
+    [(invitation,)] = db_query(
+        "SELECT token FROM projects_membership WHERE project_id = %s AND email = %s", project_id, "erin@example.test"
+    )
+
+    openid_login(page, "erin", path=f"/invitation/{invitation}")
+    token = wait_for_token(page)
+    erin = api_me(token)
+    assert erin["username"] == "erin"
+    member_of = requests.get(
+        f"{API_URL}/projects", params={"member": erin["id"]}, headers={"Authorization": f"Bearer {token}"}, timeout=10
+    ).json()
+    assert project_id in [p["id"] for p in member_of]
