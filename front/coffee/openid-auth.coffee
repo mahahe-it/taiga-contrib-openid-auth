@@ -62,29 +62,62 @@ OpenIDLoginButtonDirective = ($window, $params, $location, $config, $events, $co
 			else
 				$confirm.notify("light-error", "Our Oompa Loompas have not been able to get your credentials from OpenID.") #TODO: i18n
 
+		# OAuth `state` (login CSRF protection): random per login attempt, kept in
+		# session storage until the provider redirects back. The prefix tells our
+		# callbacks apart from those of other auth plugins (e.g. `state=github`).
+		STATE_PREFIX = "openid-"
+		STATE_KEY = "openidAuthState"
+		STATE_ERROR = "OpenID login rejected: the response does not match this login attempt (state). Please sign in again." #TODO: i18n
+
+		newState = ->
+			bytes = new Uint8Array(16)
+			$window.crypto.getRandomValues(bytes)
+			STATE_PREFIX + (("0" + b.toString(16)).slice(-2) for b in bytes).join("")
+
+		# Read once: a state is good for a single callback.
+		takeState = ->
+			try
+				expected = $window.sessionStorage.getItem(STATE_KEY)
+				$window.sessionStorage.removeItem(STATE_KEY)
+				return expected
+			catch error
+				return null
+
 		loginWithOpenIDAccount = ->
-			type = $params.state
+			state = $params.state
 			code = $params.code
-			token = $params.token
 			accessToken = $params.access_token
 			return if not (code) && not(accessToken)
-			$loader.start(true)
 
 			if code
+				# Another auth plugin's callback: not ours to handle.
+				return if state and state.indexOf(STATE_PREFIX) != 0
+				expected = takeState()
+				if not state or not expected or state != expected
+					loginOnError({data: {_error_message: STATE_ERROR}})
+					return
 				data = {code: code, url:redirectURL()}
-				$auth.login(data, "openid").then(loginOnSuccess, loginOnError)
 			else
 				data = {access_token: accessToken, url:redirectURL()}
-				$auth.login(data, "openid").then(loginOnSuccess, loginOnError)
+
+			$loader.start(true)
+			$auth.login(data, "openid").then(loginOnSuccess, loginOnError)
 
 		loginWithOpenIDAccount()
 
 
 		$el.on "click", ".button-auth", (event) ->
-			console.log(redirectURL());
-			redirectToUri = redirectURL();
-			url = "#{AUTH_URL}?redirect_uri=#{redirectToUri}&client_id=#{CLIENT_ID}&response_type=code&scope=#{AUTH_SCOPE}"
-			window.location.href = url
+			state = newState()
+			$window.sessionStorage.setItem(STATE_KEY, state)
+			params =
+				redirect_uri: redirectURL()
+				client_id: CLIENT_ID
+				response_type: "code"
+				scope: AUTH_SCOPE
+				state: state
+			query = ("#{encodeURIComponent(k)}=#{encodeURIComponent(v)}" for own k, v of params).join("&")
+			separator = if AUTH_URL.indexOf("?") >= 0 then "&" else "?"
+			$window.location.href = AUTH_URL + separator + query
 
 		$scope.$on "$destroy", ->
 			$el.off()
