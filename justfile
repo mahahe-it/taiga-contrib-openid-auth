@@ -25,6 +25,8 @@ toolbox:
     podman build -t {{ image }} .devcontainer
     distrobox rm -f {{ box }} 2>/dev/null || true
     distrobox create -Y -n {{ box }} -i {{ image }}
+    # Image tests run in the box and drive the host podman through distrobox-host-exec
+    distrobox enter -n {{ box }} -- sudo ln -sf /usr/bin/distrobox-host-exec /usr/local/bin/podman
     just hooks
 
 # Install the git pre-commit hook (works from host, distrobox and devcontainer)
@@ -83,3 +85,8 @@ e2e *args:
 test-back *args:
     {{ cli }} build -f docker/back/Dockerfile --target test -t localhost/taiga-back-openid:test .
     {{ cli }} run --rm localhost/taiga-back-openid:test python -m pytest -c /tests/pytest.ini --rootdir /tests /tests {{ args }}
+
+# Tests of the built images (`just build` first)
+test-images *args:
+    {{ tb }} env CONTAINER_CLI={{ cli }} BACK_IMAGE={{ back_image }} FRONT_IMAGE={{ front_image }} \
+        pytest -p no:cacheprovider tests/images {{ args }}

@@ -1,6 +1,5 @@
 # Every hook installs its own tool: the same config runs in the toolbox and in CI.
-# The copied upstream front script goes away with the front rework.
-exclude: ^(front/(dist/|package-lock\.json$|npm-shrinkwrap\.json$)|docker/front/30_config_env_subst\.sh$)
+exclude: ^front/package-lock\.json$
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
