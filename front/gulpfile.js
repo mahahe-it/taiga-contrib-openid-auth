@@ -15,13 +15,14 @@ gulp.task('copy-config', function() {
 });
 
 gulp.task('copy-images', function() {
-    return gulp.src(paths.images)
+    // gulp 5 reads files as UTF-8 unless told otherwise, which corrupts images
+    return gulp.src(paths.images, {encoding: false})
         .pipe(gulp.dest(paths.dist + "images"));
 });
 
+// No gulp-plumber: an error must fail the build, not ship an image without the plugin.
 gulp.task('compile', function() {
     var jade = gulp.src(paths.jade)
-        .pipe($.plumber())
         .pipe($.cached('jade'))
         .pipe($.jade({pretty: true}))
         .pipe($.angularTemplatecache({
@@ -32,21 +33,20 @@ gulp.task('compile', function() {
         .pipe($.remember('jade'));
 
     var coffee = gulp.src(paths.coffee)
-        .pipe($.plumber())
         .pipe($.cached('coffee'))
         .pipe($.coffee())
         .pipe($.remember('coffee'));
 
     return merge(jade, coffee)
         .pipe($.concat('openid-auth.js'))
-        .pipe($.uglify({mangle:false, preserveComments: false}))
+        .pipe($.uglify({mangle: false, output: {comments: false}}))
         .pipe(gulp.dest(paths.dist));
 });
 
 gulp.task('watch', function() {
-    gulp.watch([paths.jade, paths.coffee, paths.images], ['copy-images', 'compile']);
+    gulp.watch([paths.jade, paths.coffee, paths.images], gulp.series('copy-images', 'compile'));
 });
 
-gulp.task('default', gulp.series('copy-config', 'copy-images', 'compile', 'watch'));
+gulp.task('build', gulp.series('copy-config', 'copy-images', 'compile'));
 
-gulp.task('build', gulp.series('copy-config', 'copy-images', 'compile', ));
+gulp.task('default', gulp.series('build', 'watch'));
