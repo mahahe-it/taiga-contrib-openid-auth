@@ -3,7 +3,7 @@ var $ = require('gulp-load-plugins')();
 var merge = require('merge-stream');
 
 var paths = {
-    jade: 'partials/*.jade',
+    pug: 'partials/*.pug',
     coffee: 'coffee/*.coffee',
     images: 'images/**/*',
     dist: 'dist/'
@@ -22,29 +22,29 @@ gulp.task('copy-images', function() {
 
 // No gulp-plumber: an error must fail the build, not ship an image without the plugin.
 gulp.task('compile', function() {
-    var jade = gulp.src(paths.jade)
-        .pipe($.cached('jade'))
-        .pipe($.jade({pretty: true}))
+    var pug = gulp.src(paths.pug)
+        .pipe($.cached('pug'))
+        .pipe($.pug({pretty: true}))
         .pipe($.angularTemplatecache({
             transformUrl: function(url) {
                 return '/plugins/openid-auth' + url;
             }
         }))
-        .pipe($.remember('jade'));
+        .pipe($.remember('pug'));
 
     var coffee = gulp.src(paths.coffee)
         .pipe($.cached('coffee'))
         .pipe($.coffee())
         .pipe($.remember('coffee'));
 
-    return merge(jade, coffee)
+    return merge(pug, coffee)
         .pipe($.concat('openid-auth.js'))
         .pipe($.uglify({mangle: false, output: {comments: false}}))
         .pipe(gulp.dest(paths.dist));
 });
 
 gulp.task('watch', function() {
-    gulp.watch([paths.jade, paths.coffee, paths.images], gulp.series('copy-images', 'compile'));
+    gulp.watch([paths.pug, paths.coffee, paths.images], gulp.series('copy-images', 'compile'));
 });
 
 gulp.task('build', gulp.series('copy-config', 'copy-images', 'compile'));

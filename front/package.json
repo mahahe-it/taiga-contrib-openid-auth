@@ -22,18 +22,14 @@
     "url": "https://github.com/taigaio/taiga-contrib-github-auth/issues"
   },
   "homepage": "https://github.com/taigaio/taiga-contrib-github-auth",
-  "dependencies": {
-    "coffee-script": "^1.8.0",
-    "jade": "^1.9.1"
-  },
   "devDependencies": {
     "gulp": "^5.0.0",
     "gulp-angular-templatecache": "^3.0.0",
     "gulp-cached": "^1.1.0",
     "gulp-coffee": "^3.0.0",
     "gulp-concat": "^2.6.0",
-    "gulp-jade": "^1.1.0",
     "gulp-load-plugins": "^2.0.0",
+    "gulp-pug": "^5.0.0",
     "gulp-remember": "^1.0.0",
     "gulp-uglify": "^3.0.0",
     "merge-stream": "^2.0.0"

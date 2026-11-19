@@ -1,7 +1,7 @@
 ARG NODE_VERSION=26.13.1-alpine
 ARG TAIGA_FRONT_VERSION=6.10.3
 
-# The plugin's dist/ (Coffee/Jade through gulp), never committed
+# The plugin's dist/ (CoffeeScript/Pug through gulp), never committed
 FROM docker.io/library/node:${NODE_VERSION} AS build
 WORKDIR /build
 COPY front/package.json front/package-lock.json ./
