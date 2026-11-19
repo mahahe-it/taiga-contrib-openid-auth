@@ -34,7 +34,7 @@ OpenIDLoginButtonDirective = ($window, $params, $location, $config, $events, $co
 
 	link = ($scope, $el, $attrs) ->
 		AUTH_URL = $config.get("openidAuth", null)
-		AUTH_SCOPE = $config.get("openidScope", "User.Read")
+		AUTH_SCOPE = $config.get("openidScope", "openid email")
 		CLIENT_ID = $config.get("openidClientId", "taiga")
 		$scope.openid_name = $config.get("openidName", "openid-connect")
 		loginOnSuccess = (response) ->
