@@ -127,6 +127,17 @@ def _check_filter(data: dict) -> None:
         raise AuthenticationFailed("User does not satisfy OPENID_FILTER")
 
 
+def _required_claim(data: dict, setting: str) -> str:
+    """The userinfo claim named by `setting`, as a string; refuse the login without it."""
+    claim = _setting(setting)
+    value = data.get(claim, None)
+    if value in (None, ""):
+        raise AuthenticationFailed(
+            f"The identity provider did not send the '{claim}' claim ({setting}). "
+            "Check the scope (OPENID_SCOPE) and the claim mapping.")
+    return str(value)
+
+
 ######################################################
 # Simple calls
 ######################################################
@@ -169,16 +180,23 @@ def get_user_profile(headers: dict = HEADERS):
     data = _get(_setting("OPENID_USER_URL"), headers=headers)
     _check_filter(data)
 
-    username = None
+    user_id = _required_claim(data, "OPENID_ID_FIELD")
+    email = _required_claim(data, "OPENID_EMAIL_FIELD")
+
+    # Ends with the email, which is there: a username is always found.
     for field in (_setting("OPENID_USERNAME_FIELD"), "preferred_username", "full_name", "username", "email"):
-        if data.get(field, None) is not None:
-            username = data[field]
+        if data.get(field, None) not in (None, ""):
+            username = str(data[field])
             break
 
-    return User(id=data.get(_setting("OPENID_ID_FIELD"), None),
+    # Taiga needs a full name; providers send `name` only with the `profile` scope.
+    full_name = data.get(_setting("OPENID_FULLNAME_FIELD"), None)
+    full_name = str(full_name) if full_name not in (None, "") else username
+
+    return User(id=user_id,
                 username=username,
-                full_name=data.get(_setting("OPENID_FULLNAME_FIELD"), None),
-                email=data.get(_setting("OPENID_EMAIL_FIELD"), None),
+                full_name=full_name,
+                email=email,
                 email_verified=is_true(data.get("email_verified", None)),
                 )
 
