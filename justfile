@@ -78,3 +78,8 @@ e2e *args:
         -e DJANGO_SUPERUSER_PASSWORD=e2e-admin \
         taiga-back python manage.py createsuperuser --noinput
     {{ compose }} --profile test run --rm --build e2e {{ args }}
+
+# Back unit tests, inside the back image's `test` stage
+test-back *args:
+    {{ cli }} build -f docker/back/Dockerfile --target test -t localhost/taiga-back-openid:test .
+    {{ cli }} run --rm localhost/taiga-back-openid:test python -m pytest -c /tests/pytest.ini --rootdir /tests /tests {{ args }}

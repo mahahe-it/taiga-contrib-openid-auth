@@ -43,6 +43,28 @@ jobs:
           pip install "pre-commit==${PRE_COMMIT_VERSION}"
           pre-commit run --all-files --show-diff-on-failure
 
+  back-unit:
+    name: back-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: docker/setup-buildx-action@v4.4.1
+
+      - name: Build the test stage
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: docker/back/Dockerfile
+          target: test
+          tags: localhost/taiga-back-openid:test
+          load: true
+          cache-from: type=gha,scope=back
+          cache-to: type=gha,scope=back-test,mode=max
+
+      - name: Unit tests
+        run: docker run --rm localhost/taiga-back-openid:test
+
   images:
     # Built once, shared with the test jobs as a docker-save artifact
     name: images
