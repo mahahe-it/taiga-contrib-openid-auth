@@ -1,0 +1,92 @@
+name: Release
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    # Opens/updates the release PR; on its merge, tags and creates the GitHub
+    # release. The app token makes the release PR trigger CI.
+    name: Release PR
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/create-github-app-token@v3.4.0
+        id: app-token
+        with:
+          client-id: ${{ vars.MAHAHE_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.MAHAHE_BOT_PRIVATE_KEY }}
+
+      - uses: googleapis/release-please-action@v5.0.0
+        id: release
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  images:
+    # Both images on every release: <base version> moves, <base>-openid.<version> is new
+    name: Publish taiga-${{ matrix.image }}-openid
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: back
+            arg: TAIGA_BACK_VERSION
+          - image: front
+            arg: TAIGA_FRONT_VERSION
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/taiga-${{ matrix.image }}-openid
+      VERSION: ${{ needs.release-please.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Base version
+        id: base
+        run: |
+          base=$(sed -n 's/^ARG ${{ matrix.arg }}=//p' docker/${{ matrix.image }}/Dockerfile)
+          [ -n "$base" ] || { echo "no ${{ matrix.arg }} in the Dockerfile"; exit 1; }
+          echo "version=$base" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4.4.1
+
+      - uses: docker/login-action@v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: docker/${{ matrix.image }}/Dockerfile
+          # The taigaio base images are amd64 only
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.base.outputs.version }}
+            ${{ env.IMAGE }}:${{ steps.base.outputs.version }}-openid.${{ env.VERSION }}
+          labels: |
+            org.opencontainers.image.title=taiga-${{ matrix.image }}-openid
+            org.opencontainers.image.description=taigaio/taiga-${{ matrix.image }} with the OpenID Connect login plugin
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.base.outputs.version }}-openid.${{ env.VERSION }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=AGPL-3.0-or-later
+            org.opencontainers.image.base.name=docker.io/taigaio/taiga-${{ matrix.image }}:${{ steps.base.outputs.version }}
+          cache-from: type=gha,scope=${{ matrix.image }}

@@ -1,292 +1,126 @@
-taiga-contrib-openid-auth
-=========================
-An OpenID / Keycloak Authentication Plugin. Heavily based off of
-[taiga-contrib-github-auth](https://github.com/kaleidos-ventures/taiga-contrib-github-auth/).
+# taiga-contrib-openid-auth
 
-Compatible with Taiga 4.2.1, 5.x, 6
+OpenID Connect login for [Taiga](https://taiga.io) 6: users sign in through
+Keycloak or any other OpenID Connect provider, and can be limited to members of
+given groups. Based on [taiga-contrib-github-auth](https://github.com/taigaio/taiga-contrib-github-auth).
 
-# Installation
+Maintained by [MaHaHe](https://github.com/mahahe-it). It started as a fork of
+[robrotheram/taiga-contrib-openid-auth](https://github.com/robrotheram/taiga-contrib-openid-auth),
+which is no longer maintained.
 
-## Docker
-This plugin is compatible with the [offical taiga docker images](https://github.com/taigaio/taiga-docker) 😃
+## Images
 
-This project builds 2 images based off the images provided by taiga. This should allow anyother customisations to continue to work.
+Two images extend the official taigaio ones with the plugin and nothing else, so
+every upstream variable and customisation keeps working:
 
-The following will show the changes needed to the default docker-compose file to install the openid plugin.
+| Image | Base | Tags |
+|---|---|---|
+| `ghcr.io/mahahe-it/taiga-back-openid` | `taigaio/taiga-back:6.10.2` | `6.10.2`, `6.10.2-openid.<version>` |
+| `ghcr.io/mahahe-it/taiga-front-openid` | `taigaio/taiga-front:6.10.3` | `6.10.3`, `6.10.3-openid.<version>` |
 
-### Config 
-The 2 images:
- - ghcr.io/mahahe-it/taiga-back-openid
- - ghcr.io/mahahe-it/taiga-front-openid
+Each image is tagged with the version of its own base (taigaio versions back and
+front independently). `<base>` moves to the newest plugin release built on that
+base; `<base>-openid.<version>` never changes. There is no `latest`. Every plugin
+release rebuilds both images. Images are `linux/amd64`, like their bases.
 
-Use the following environmental setting to configure the frontend conf.json and backed settings.py
+Use the back image for **taiga-back and taiga-async**: async loads the same
+settings, and with `ENABLE_OPENID=True` it needs the plugin installed.
 
-```
-ENABLE_OPENID: "True"
-OPENID_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/auth"
-OPENID_USER_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/userinfo"
-OPENID_TOKEN_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/token"
-OPENID_CLIENT_ID : "<CLient ID>"
-OPENID_CLIENT_SECRET : "<CLient SECRET>"
-OPENID_NAME: "Name you want to give your openid provider e.g keycloak"
-```
+### Back variables (taiga-back, taiga-async)
 
-The following are optional fields to configure the mapping between keycloak and taiga if left blank the defaults will be used
-```
-OPENID_ID_FIELD = "sub"
-OPENID_USERNAME_FIELD = "preferred_username"
-OPENID_FULLNAME_FIELD = "name"
-OPENID_EMAIL_FIELD = "email"
-OPENID_SCOPE="openid email"
-```
+| Variable | Default | |
+|---|---|---|
+| `ENABLE_OPENID` | `False` | `True` installs the plugin |
+| `OPENID_TOKEN_URL` | | token endpoint, e.g. `https://<keycloak>/realms/<realm>/protocol/openid-connect/token` |
+| `OPENID_USER_URL` | | userinfo endpoint, e.g. `https://<keycloak>/realms/<realm>/protocol/openid-connect/userinfo` |
+| `OPENID_CLIENT_ID` | | |
+| `OPENID_CLIENT_SECRET` | | |
+| `OPENID_SCOPE` | `openid email` | add `profile` for Keycloak to send the username and full name |
+| `OPENID_ID_FIELD` | `sub` | claim with the user's unique id |
+| `OPENID_USERNAME_FIELD` | `preferred_username` | then `preferred_username`, `full_name`, `username`, `email` are tried in order |
+| `OPENID_FULLNAME_FIELD` | `name` | |
+| `OPENID_EMAIL_FIELD` | `email` | |
+| `OPENID_FILTER_FIELD` | | claim to filter on, e.g. `groups` (a list or a single string) |
+| `OPENID_FILTER` | | allowed values, comma separated, e.g. `taiga_users, taiga_admins` |
 
-The following are optional fields to configure filtering users based on the openid-userinfo. A common use case is to allow only
-specific roles or groups to log into taiga.
-`OPENID_FILTER_FIELD` is the name of the claim that's present in the UserInfo. The field is expected to be a list of strings.
-`OPENID_FILTER` is the allowed values, comma seperated. 
-```
-OPENID_FILTER = "taiga_users,taiga_admins"
-OPENID_FILTER_FIELD = "groups"
-```
+`PUBLIC_REGISTER_ENABLED=True` (upstream variable) lets the plugin create
+accounts on the first login; without it only existing users can sign in. A user
+whose email matches an existing Taiga account is linked to that account.
 
-Username fallback 
-The plugin will first try if the OpenID provider contains a feild set in OPENID_USERNAME_FIELD
-if it does not exist it will try in the following order: preferred_username  -> full_name -> username -> email
-you can override this by changing the intial field to check by setting OPENID_USERNAME_FIELD
+The image selects its settings with `DJANGO_SETTINGS_MODULE=settings.openid`,
+which loads upstream's `settings/config.py` and adds the plugin. A `config.py`
+mounted over upstream's keeps working.
 
+### Front variables (taiga-front)
 
-### Docker-compose file modified from https://github.com/kaleidos-ventures/taiga-docker/
-```
-version: "3.5"
+| Variable | Default | |
+|---|---|---|
+| `ENABLE_OPENID` | `false` | `true` adds the login button |
+| `OPENID_URL` | | authorization endpoint, e.g. `https://<keycloak>/realms/<realm>/protocol/openid-connect/auth` |
+| `OPENID_CLIENT_ID` | | |
+| `OPENID_NAME` | `OpenID` | the button reads "Sign in with `<name>`" |
+| `OPENID_SCOPE` | `openid email` | same value as the back's |
 
-x-environment:
-  &default-back-environment
-  # Database settings
-  POSTGRES_DB: taiga
-  POSTGRES_USER: taiga
-  POSTGRES_PASSWORD: taiga
-  POSTGRES_HOST: taiga-db
-  # Taiga settings
-  TAIGA_SECRET_KEY: "taiga-back-secret-key"
-  TAIGA_SITES_DOMAIN: "localhost:9000"
-  TAIGA_SITES_SCHEME: "http"
-  # Email settings. Uncomment following lines and configure your SMTP server
-  # EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
-  # DEFAULT_FROM_EMAIL: "no-reply@example.com"
-  # EMAIL_USE_TLS: "False"
-  # EMAIL_USE_SSL: "False"
-  # EMAIL_HOST: "smtp.host.example.com"
-  # EMAIL_PORT: 587
-  # EMAIL_HOST_USER: "user"
-  # EMAIL_HOST_PASSWORD: "password"
-  # Rabbitmq settings
-  # Should be the same as in taiga-async-rabbitmq and taiga-events-rabbitmq
-  RABBITMQ_USER: taiga
-  RABBITMQ_PASS: taiga
-  # RabbitMQ Fixes
-  CELERY_BROKER_URL: "amqp://taiga:taiga@taiga-async-rabbitmq:5672/taiga"
-  EVENTS_PUSH_BACKEND: "taiga.events.backends.rabbitmq.EventsPushBackend"
-  EVENTS_PUSH_BACKEND_URL: "amqp://taiga:taiga@taiga-events-rabbitmq:5672/taiga"
-                
+The image adds these settings and the plugin to the `conf.json` that upstream
+generates at the first start. A `conf.json` you mount yourself is left alone:
+add `openidAuth`, `openidClientId`, `openidName`, `openidScope` and
+`"plugins/openid-auth/openid-auth.json"` in `contribPlugins` to it.
 
-  
-  # Telemetry settings
-  ENABLE_TELEMETRY: "True"
-  
-  # Enable OpenID to allow to register users if they do not exist. Set to false to disable all signups
-  PUBLIC_REGISTER_ENABLED: "True"
+### Keycloak
 
-  # OpenID settings
-  ENABLE_OPENID: "True"
-  OPENID_USER_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/userinfo"
-  OPENID_TOKEN_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/token"
-  OPENID_CLIENT_ID : "<CLient ID>"
-  OPENID_CLIENT_SECRET : "<CLient SECRET>"
-  OPENID_SCOPE="openid email"
+Create a confidential OpenID Connect client (client authentication on, standard
+flow) with the redirect URI `https://<your-taiga>/*`. To filter by group, add a
+"Group Membership" mapper to the client with the token claim name `groups`,
+"Full group path" off and "Add to userinfo" on, then set
+`OPENID_FILTER_FIELD=groups` and `OPENID_FILTER=<group>`.
 
-x-volumes:
-  &default-back-volumes
-  - taiga-static-data:/taiga-back/static
-  - taiga-media-data:/taiga-back/media
-  # - ./config.py:/taiga-back/settings/config.py
-
-
-services:
-  taiga-db:
-    image: postgres:12.3
-    environment:
-      POSTGRES_DB: taiga
-      POSTGRES_USER: taiga
-      POSTGRES_PASSWORD: taiga
-    volumes:
-      - taiga-db-data:/var/lib/postgresql/data
-    networks:
-      - taiga
-
-  taiga-back:
-    image: ghcr.io/mahahe-it/taiga-back-openid
-    environment: *default-back-environment
-    volumes: *default-back-volumes
-    networks:
-      - taiga
-    depends_on:
-      - taiga-db
-      - taiga-events-rabbitmq
-      - taiga-async-rabbitmq
-
-  taiga-async:
-    image: taigaio/taiga-back:latest
-    entrypoint: ["/taiga-back/docker/async_entrypoint.sh"]
-    environment: *default-back-environment
-    volumes: *default-back-volumes
-    networks:
-      - taiga
-    depends_on:
-      - taiga-db
-      - taiga-back
-      - taiga-async-rabbitmq
-
-  taiga-async-rabbitmq:
-    image: rabbitmq:3-management-alpine
-    environment:
-      RABBITMQ_ERLANG_COOKIE: secret-erlang-cookie
-      RABBITMQ_DEFAULT_USER: taiga
-      RABBITMQ_DEFAULT_PASS: taiga
-      RABBITMQ_DEFAULT_VHOST: taiga
-    volumes:
-      - taiga-async-rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - taiga
-
-  taiga-front:
-    image: ghcr.io/mahahe-it/taiga-front-openid
-    environment:
-      TAIGA_URL: "http://localhost:9000"
-      TAIGA_WEBSOCKETS_URL: "ws://localhost:9000"
-      ENABLE_OPENID: "true"
-      OPENID_URL : "https://{url-to-keycloak}/realms/{realm}/protocol/openid-connect/auth"
-      OPENID_CLIENT_ID : "<ClientID>"
-      OPENID_NAME: "Name you want to give your openid provider e.g keycloak"
-    networks:
-      - taiga
-    # volumes:
-    #   - ./conf.json:/usr/share/nginx/html/conf.json
-
-  taiga-events:
-    image: taigaio/taiga-events:latest
-    environment:
-      RABBITMQ_USER: taiga
-      RABBITMQ_PASS: taiga
-      TAIGA_SECRET_KEY: "taiga-back-secret-key"
-    networks:
-      - taiga
-    depends_on:
-      - taiga-events-rabbitmq
-
-  taiga-events-rabbitmq:
-    image: rabbitmq:3-management-alpine
-    environment:
-      RABBITMQ_ERLANG_COOKIE: secret-erlang-cookie
-      RABBITMQ_DEFAULT_USER: taiga
-      RABBITMQ_DEFAULT_PASS: taiga
-      RABBITMQ_DEFAULT_VHOST: taiga
-    volumes:
-      - taiga-events-rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - taiga
-
-  taiga-protected:
-    image: taigaio/taiga-protected:latest
-    environment:
-      MAX_AGE: 360
-      SECRET_KEY: "taiga-back-secret-key"
-    networks:
-      - taiga
-
-  taiga-gateway:
-    image: nginx:1.19-alpine
-    ports:
-      - "9000:80"
-    volumes:
-      - ./taiga-gateway/taiga.conf:/etc/nginx/conf.d/default.conf
-      - taiga-static-data:/taiga/static
-      - taiga-media-data:/taiga/media
-    networks:
-      - taiga
-    depends_on:
-      - taiga-front
-      - taiga-back
-      - taiga-events
-
-volumes:
-  taiga-static-data:
-  taiga-media-data:
-  taiga-db-data:
-  taiga-async-rabbitmq-data:
-  taiga-events-rabbitmq-data:
-
-networks:
-  taiga:
-```
-
-### Docker building
-
-For Docker building for new release make sure that the following files are coppied into the docker directory
-
-**Frontend:**
-copy the config.json and config_env_subst.sh from https://github.com/kaleidos-ventures/taiga-front/tree/main/docker
+[`e2e/compose.yaml`](e2e/compose.yaml) is a complete, tested setup with Keycloak
+([`e2e/keycloak/realm-taiga.json`](e2e/keycloak/realm-taiga.json)), based on
+[taiga-docker](https://github.com/taigaio/taiga-docker).
 
 ## Manual installation
-### Taiga Backend
 
-Clone the repo and
+Back, in taiga-back's virtualenv:
+
 ```bash
-cd taiga-contrib-openid-auth/back
-workon taiga
-pip install -e .
+pip install ./back
 ```
 
-Modify `taiga-back/settings/local.py` and include the line:
+and in the settings module:
 
 ```python
 INSTALLED_APPS += ["taiga_contrib_openid_auth"]
-OPENID_USER_URL = "https://{url-to-keycloak}/auth/realms/{realm}/protocol/openid-connect/userinfo"
-OPENID_TOKEN_URL = "https://{url-to-keycloak}/auth/realms/{realm}/protocol/openid-connect/token"
-OPENID_CLIENT_ID = "{client id}"
-OPENID_CLIENT_SECRET = "{client secret}"
+OPENID_USER_URL = "https://<keycloak>/realms/<realm>/protocol/openid-connect/userinfo"
+OPENID_TOKEN_URL = "https://<keycloak>/realms/<realm>/protocol/openid-connect/token"
+OPENID_CLIENT_ID = "<client id>"
+OPENID_CLIENT_SECRET = "<client secret>"
 ```
 
-## Taiga Frontend
-
-Clone the repo and then link `dist` to the `taiga-front` plugins directory:
-
-```bash
-mkdir {path-to-taiga-frontend}/plugins
-ln -s {path-to-taiga-contrib-openid-auth}/dist {path-to-taiga-frontend}/plugins/openid-auth
-```
-
-Add the following values to `{path-to-taiga-frontend}/conf.json`:
+Front: build the plugin (`cd front && npm ci && npx gulp copy-config copy-images compile`),
+copy `front/dist/` to `<taiga-front>/plugins/openid-auth/`, and add to `conf.json`:
 
 ```json
 {
-  "openidAuth" : "https://{url-to-keycloak}/auth/realms/{realm}/protocol/openid-connect/auth",
-  "openidName" : "{name-for-login-button}",
-  "openidClientId": "{client_id}",
-  "contribPlugins": [
-      "/plugins/openid-auth/openid-auth.json"
-  ]
+  "openidAuth": "https://<keycloak>/realms/<realm>/protocol/openid-connect/auth",
+  "openidName": "<name for the login button>",
+  "openidClientId": "<client id>",
+  "openidScope": "openid email profile",
+  "contribPlugins": ["plugins/openid-auth/openid-auth.json"]
 }
 ```
 
-# Building
+## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the development environment and the `just` recipes.
+See [CONTRIBUTING.md](CONTRIBUTING.md): `just build`, `just test-back`,
+`just test-images` and `just e2e` build the images and run the unit, image and
+end-to-end tests.
 
-# Contributions
+## Contributions
+
 My thanks to all the people who have added to the plugin
-- @cristianlazarop 
+- @cristianlazarop
 - @swedishborgie
-- @baloo42 
+- @baloo42
 - @carneirofc
-- @mahahe-it
+- @robrotheram
 - The whole taiga team who wrote the github plugin that this plugin is based off.
