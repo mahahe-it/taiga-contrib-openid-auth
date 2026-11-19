@@ -42,26 +42,40 @@ def test_user_outside_filter_rejected(page: Page):
     assert stored_token(page) is None
 
 
-def test_existing_email_is_linked(page: Page):
+def register_local(username: str, email: str) -> int:
+    """A password account, created through Taiga's public registration."""
     response = requests.post(
         f"{API_URL}/auth/register",
         json={
             "type": "public",
-            "username": "carol-local",
-            "email": "carol@example.test",
-            "full_name": "Carol Local",
-            "password": "carol-local-pw",
+            "username": username,
+            "email": email,
+            "full_name": username,
+            "password": f"{username}-pw",
             "accepted_terms": True,
         },
         timeout=10,
     )
     response.raise_for_status()
-    local_id = response.json()["id"]
+    return response.json()["id"]
+
+
+def test_existing_email_is_linked(page: Page):
+    local_id = register_local("carol-local", "carol@example.test")
 
     openid_login(page, "carol")
     me = api_me(wait_for_token(page))
     assert me["id"] == local_id
     assert me["username"] == "carol-local"
+
+
+def test_unverified_email_not_linked(page: Page):
+    """Account takeover: an unverified email must not reach the existing account."""
+    register_local("dave-local", "dave@example.test")
+
+    openid_login(page, "dave")
+    expect(page.get_by_text(re.compile("OPENID_REQUIRE_VERIFIED_EMAIL"))).to_be_visible(timeout=30_000)
+    assert stored_token(page) is None
 
 
 def held_callback(page: Page) -> dict[str, str]:

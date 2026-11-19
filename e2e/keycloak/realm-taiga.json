@@ -32,6 +32,16 @@
       "lastName": "E2E",
       "credentials": [{"type": "password", "value": "e2e", "temporary": false}],
       "groups": ["/taiga_users"]
+    },
+    {
+      "username": "dave",
+      "enabled": true,
+      "email": "dave@example.test",
+      "emailVerified": false,
+      "firstName": "Dave",
+      "lastName": "E2E",
+      "credentials": [{"type": "password", "value": "e2e", "temporary": false}],
+      "groups": ["/taiga_users"]
     }
   ],
   "clients": [
