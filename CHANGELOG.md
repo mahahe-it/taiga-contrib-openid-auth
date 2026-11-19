@@ -4,6 +4,14 @@
 
 Releases of robrotheram/taiga-contrib-openid-auth, kept for reference.
 
+## [1.0.4](https://github.com/mahahe-it/taiga-contrib-openid-auth/compare/1.0.3...1.0.4) (2026-11-19)
+
+
+### Bug Fixes
+
+* **front:** build the plugin with gulp 5, CoffeeScript 2 and uglify 3 ([#55](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/55)) ([4b90b28](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/4b90b28e9920239d49e985c119a2d44712bb0bd1))
+* **front:** compile the template with pug instead of jade ([#57](https://github.com/mahahe-it/taiga-contrib-openid-auth/issues/57)) ([5f5022d](https://github.com/mahahe-it/taiga-contrib-openid-auth/commit/5f5022d662c99dae6d83778df515296457601c50))
+
 ## [1.0.3](https://github.com/mahahe-it/taiga-contrib-openid-auth/compare/1.0.2...1.0.3) (2026-11-19)
 
 
