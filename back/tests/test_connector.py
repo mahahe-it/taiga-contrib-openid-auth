@@ -160,3 +160,31 @@ def test_token_error_renders(openid_settings):
     body = rendered(excinfo.value)
     assert body["status_code"] == 401
     assert body["error"] == "unauthorized_client"
+
+
+@pytest.mark.parametrize(("claim", "setting"), [("sub", "OPENID_ID_FIELD"), ("email", "OPENID_EMAIL_FIELD")])
+def test_missing_required_claim_rejected(openid_settings, claim, setting):
+    data = {key: value for key, value in USERINFO.items() if key != claim}
+    with pytest.raises(AuthenticationFailed) as excinfo:
+        profile(data)
+    message = str(excinfo.value.detail)
+    assert f"'{claim}'" in message
+    assert setting in message
+
+
+def test_missing_name_falls_back_to_username(openid_settings):
+    data = {key: value for key, value in USERINFO.items() if key != "name"}
+    assert profile(data).full_name == "alice"
+
+
+def test_scope_without_profile(openid_settings):
+    """Keycloak with scope `openid email`: no name, no preferred_username."""
+    user = profile({"sub": "abc-123", "email": "alice@example.test", "email_verified": True})
+    assert user.username == "alice@example.test"
+    assert user.full_name == "alice@example.test"
+
+
+def test_non_string_claims_become_strings(openid_settings):
+    user = profile({**USERINFO, "sub": 42, "preferred_username": 7})
+    assert user.id == "42"
+    assert user.username == "7"

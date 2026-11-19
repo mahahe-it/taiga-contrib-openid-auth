@@ -45,6 +45,11 @@ settings, and with `ENABLE_OPENID=True` it needs the plugin installed.
 | `OPENID_REQUIRE_VERIFIED_EMAIL` | `True` | link to an existing account only if the provider sends `email_verified: true` |
 | `OPENID_ALLOW_ACCESS_TOKEN` | `False` | accept an access token from the front (`/login?access_token=…`), see below |
 
+The userinfo response must carry the id (`OPENID_ID_FIELD`) and email
+(`OPENID_EMAIL_FIELD`) claims, or the login is refused with an error naming the
+missing claim. Without a full name claim (Keycloak sends `name` only with the
+`profile` scope), the username is used.
+
 `PUBLIC_REGISTER_ENABLED=True` (upstream variable) lets the plugin create
 accounts on the first login; without it only existing users can sign in.
 
