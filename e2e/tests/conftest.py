@@ -4,6 +4,7 @@ import json
 import os
 import re
 
+import psycopg
 import pytest
 import requests
 from playwright.sync_api import Browser, Page
@@ -14,9 +15,9 @@ KEYCLOAK_PASSWORD = "e2e"
 OPENID_NAME = "Keycloak E2E"
 
 
-def openid_login(page: Page, username: str) -> None:
-    """Click the OpenID button on Taiga's login page and sign in on Keycloak."""
-    page.goto(f"{TAIGA_URL}/login")
+def openid_login(page: Page, username: str, path: str = "/login") -> None:
+    """Click the OpenID button on a Taiga page (login by default) and sign in on Keycloak."""
+    page.goto(f"{TAIGA_URL}{path}")
     page.get_by_text(f"Sign in with {OPENID_NAME}").click()
     page.wait_for_url(re.compile(r"^http://keycloak:8080/"))
     page.fill("#username", username)
@@ -34,6 +35,21 @@ def wait_for_token(page: Page) -> str:
     token = stored_token(page)
     assert token
     return token
+
+
+def admin_token() -> str:
+    response = requests.post(
+        f"{API_URL}/auth", json={"type": "normal", "username": "admin", "password": "e2e-admin"}, timeout=10
+    )
+    response.raise_for_status()
+    return response.json()["auth_token"]
+
+
+def db_query(sql: str, *params):
+    """Taiga's database, for what the API does not expose (invitation tokens)."""
+    with psycopg.connect("host=taiga-db dbname=taiga user=taiga password=taiga") as conn:
+        cursor = conn.execute(sql, params)
+        return cursor.fetchall() if cursor.description else []
 
 
 def api_me(token: str) -> dict:
