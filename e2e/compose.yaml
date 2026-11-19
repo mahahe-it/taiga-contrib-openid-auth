@@ -39,7 +39,7 @@ x-rabbitmq-environment: &rabbitmq-environment
 
 services:
   taiga-db:
-    image: docker.io/library/postgres:13.23-alpine
+    image: docker.io/library/postgres:18.7-alpine
     environment:
       POSTGRES_DB: taiga
       POSTGRES_USER: taiga
@@ -80,7 +80,7 @@ services:
         condition: service_started
 
   taiga-async-rabbitmq:
-    image: docker.io/library/rabbitmq:3.13.7-alpine
+    image: docker.io/library/rabbitmq:4.4.1-alpine
     hostname: taiga-async-rabbitmq
     environment: *rabbitmq-environment
 
@@ -122,7 +122,7 @@ services:
         condition: service_started
 
   taiga-events-rabbitmq:
-    image: docker.io/library/rabbitmq:3.13.7-alpine
+    image: docker.io/library/rabbitmq:4.4.1-alpine
     hostname: taiga-events-rabbitmq
     environment: *rabbitmq-environment
 
