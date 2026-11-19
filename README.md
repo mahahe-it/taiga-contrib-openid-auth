@@ -90,6 +90,15 @@ generates at the first start. A `conf.json` you mount yourself is left alone:
 add `openidAuth`, `openidClientId`, `openidName`, `openidScope` and
 `"plugins/openid-auth/openid-auth.json"` in `contribPlugins` to it.
 
+### Redirect URI
+
+The button sends the page it is on as the redirect URI: `/login`, `/register`
+or `/invitation/<token>` under your Taiga URL (and `TAIGA_SUBPATH`). Allow
+`https://<your-taiga>/*` on the provider. A provider that only takes exact URIs
+needs `https://<your-taiga>/login` and `https://<your-taiga>/register`; signing
+in from an invitation link then fails there, so invited users sign in from the
+login page and open the invitation again.
+
 ### Keycloak
 
 Create a confidential OpenID Connect client (client authentication on, standard
@@ -101,6 +110,25 @@ flow) with the redirect URI `https://<your-taiga>/*`. To filter by group, add a
 [`e2e/compose.yaml`](e2e/compose.yaml) is a complete, tested setup with Keycloak
 ([`e2e/keycloak/realm-taiga.json`](e2e/keycloak/realm-taiga.json)), based on
 [taiga-docker](https://github.com/taigaio/taiga-docker).
+
+### Other providers
+
+Only Keycloak is covered by the end-to-end test. Notes for others:
+
+- **Microsoft Entra ID**: authorization and token endpoints
+  `https://login.microsoftonline.com/<tenant>/oauth2/v2.0/authorize` and
+  `.../token`, userinfo `https://graph.microsoft.com/oidc/userinfo`, scope
+  `openid email profile`. Redirect URIs must be exact (see above). The userinfo
+  has no `preferred_username` (the email becomes the username), no groups (the
+  group filter cannot be used) and no `email_verified`, so linking to existing
+  accounts is refused unless `OPENID_REQUIRE_VERIFIED_EMAIL=False`. Entra does
+  not verify the `email` claim, so only turn it off for a single-tenant app
+  whose users cannot change their email.
+- **authentik**: endpoints `https://<authentik>/application/o/authorize/`,
+  `.../token/` and `.../userinfo/`, with the trailing slash (see
+  [Troubleshooting](#troubleshooting)). A regex redirect URI such as
+  `https://taiga\.example\.com/.*` matches every page. The default `profile`
+  scope sends `groups`, usable with `OPENID_FILTER_FIELD=groups`.
 
 ## Manual installation
 
@@ -132,6 +160,29 @@ copy `front/dist/` to `<taiga-front>/plugins/openid-auth/`, and add to `conf.jso
   "contribPlugins": ["plugins/openid-auth/openid-auth.json"]
 }
 ```
+
+## Troubleshooting
+
+- **"Our Oompa Loompas have not been able to get your credentials from
+  OpenID."** The front shows this when the back's error has no message for
+  users: the details are in the response to `POST /api/v1/auth` (browser
+  developer tools: `status_code` and `error` from the provider) and in the
+  taiga-back logs.
+- **`status_code` 405 from the token endpoint**: `OPENID_TOKEN_URL` redirects
+  (`http` to `https`, a missing trailing slash) and the redirect turns the POST
+  into a GET. Use the exact URL from the provider's discovery document
+  (`/.well-known/openid-configuration`).
+- **"invalid login type"**: the back does not have the plugin. `ENABLE_OPENID`
+  must be exactly `True` on taiga-back and taiga-async (exactly `true` on
+  taiga-front), and taiga-async must run the back image too.
+- **Provider behind a private CA** (`error`: "could not be reached
+  (SSLError)", "certificate verify failed" in the logs): the back calls the token and userinfo endpoints itself. Mount a CA bundle
+  holding the public CAs plus yours (e.g. the system bundle with your CA
+  appended) on taiga-back and taiga-async and point `REQUESTS_CA_BUNDLE` at it.
+- **`error`: "the identity provider did not answer within 10 s"** (or "could
+  not be reached"): taiga-back cannot reach the provider (no egress, firewall,
+  DNS); the logs name the endpoint. `OPENID_TIMEOUT` raises the limit if the
+  provider is just slow.
 
 ## Development
 
