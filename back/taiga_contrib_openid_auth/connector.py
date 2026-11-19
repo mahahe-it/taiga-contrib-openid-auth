@@ -45,12 +45,13 @@ DEFAULTS = {
     "OPENID_USERNAME_FIELD": "preferred_username",
     "OPENID_FULLNAME_FIELD": "name",
     "OPENID_EMAIL_FIELD": "email",
+    "OPENID_REQUIRE_VERIFIED_EMAIL": True,
 }
 
 HEADERS = {"Accept": "application/json", }
 
 AuthInfo = namedtuple("AuthInfo", ["access_token"])
-User = namedtuple("User", ["id", "username", "full_name", "email"])
+User = namedtuple("User", ["id", "username", "full_name", "email", "email_verified"])
 
 ######################################################
 # utils
@@ -59,6 +60,13 @@ User = namedtuple("User", ["id", "username", "full_name", "email"])
 
 def _setting(name: str):
     return getattr(settings, name, DEFAULTS[name])
+
+
+def is_true(value) -> bool:
+    """A boolean claim or setting: some providers send "true" as a string, env vars are strings."""
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes")
+    return value is True
 
 
 def _json_or_none(response):
@@ -165,6 +173,7 @@ def get_user_profile(headers: dict = HEADERS):
                 username=username,
                 full_name=data.get(_setting("OPENID_FULLNAME_FIELD"), None),
                 email=data.get(_setting("OPENID_EMAIL_FIELD"), None),
+                email_verified=is_true(data.get("email_verified", None)),
                 )
 
 ######################################################

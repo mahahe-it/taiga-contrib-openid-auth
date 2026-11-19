@@ -98,7 +98,18 @@ def test_field_mapping_from_settings(openid_settings):
     user = profile(
         {"oid": "o-1", "nickname": "ali", "display_name": "Alice D", "mail": "a@example.test"}
     )
-    assert user == connector.User(id="o-1", username="ali", full_name="Alice D", email="a@example.test")
+    assert user == connector.User(
+        id="o-1", username="ali", full_name="Alice D", email="a@example.test", email_verified=False
+    )
+
+
+@pytest.mark.parametrize(
+    ("claim", "verified"),
+    [(True, True), ("true", True), ("True", True), (False, False), ("false", False), (None, False), (1, False)],
+)
+def test_email_verified_claim(openid_settings, claim, verified):
+    data = {**USERINFO, "email_verified": claim} if claim is not None else USERINFO
+    assert profile(data).email_verified is verified
 
 
 def test_userinfo_non_json_error(openid_settings):

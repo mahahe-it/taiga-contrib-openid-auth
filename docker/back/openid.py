@@ -29,3 +29,6 @@ if ENABLE_OPENID:
     ):
         if _name in os.environ:
             globals()[_name] = os.environ[_name]
+
+    if "OPENID_REQUIRE_VERIFIED_EMAIL" in os.environ:
+        OPENID_REQUIRE_VERIFIED_EMAIL = os.environ["OPENID_REQUIRE_VERIFIED_EMAIL"].strip().lower() in ("true", "1", "yes")

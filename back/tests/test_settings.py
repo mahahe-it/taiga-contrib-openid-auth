@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import sys
 
+import pytest
+
 ALL_VARS = {
     "OPENID_USER_URL": "https://idp.example.test/userinfo",
     "OPENID_TOKEN_URL": "https://idp.example.test/token",
@@ -30,7 +32,7 @@ print(json.dumps({
     "values": {n: getattr(settings, n, None) for n in names},
     "defined": {n: hasattr(settings, n) for n in names},
 }))
-""".replace("NAMES", repr(sorted(ALL_VARS)))
+""".replace("NAMES", repr(sorted([*ALL_VARS, "OPENID_REQUIRE_VERIFIED_EMAIL"])))
 
 
 def load_settings(env: dict, cwd: str = "/taiga-back") -> dict:
@@ -52,7 +54,18 @@ def load_settings(env: dict, cwd: str = "/taiga-back") -> dict:
 def test_openid_settings_from_env():
     loaded = load_settings({"ENABLE_OPENID": "True", **ALL_VARS})
     assert loaded["installed"] is True
-    assert loaded["values"] == ALL_VARS
+    assert {name: loaded["values"][name] for name in ALL_VARS} == ALL_VARS
+
+
+@pytest.mark.parametrize(("env", "value"), [("True", True), ("true", True), ("False", False), ("no", False)])
+def test_require_verified_email_from_env(env, value):
+    loaded = load_settings({"ENABLE_OPENID": "True", "OPENID_REQUIRE_VERIFIED_EMAIL": env})
+    assert loaded["values"]["OPENID_REQUIRE_VERIFIED_EMAIL"] is value
+
+
+def test_require_verified_email_unset_keeps_connector_default():
+    loaded = load_settings({"ENABLE_OPENID": "True"})
+    assert loaded["defined"]["OPENID_REQUIRE_VERIFIED_EMAIL"] is False
 
 
 def test_unset_field_env_keeps_connector_default():

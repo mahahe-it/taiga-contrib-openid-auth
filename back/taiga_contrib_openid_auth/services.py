@@ -29,8 +29,23 @@ from . import connector
 
 PUBLIC_REGISTER_ENABLED = getattr(settings, "PUBLIC_REGISTER_ENABLED", False)
 
+
+def check_email_link(email_verified: bool) -> None:
+    """
+    Linking an OpenID identity to an existing account by email hands that
+    account over: refuse it unless the provider says the email is verified.
+    """
+    if email_verified or not connector.is_true(connector._setting("OPENID_REQUIRE_VERIFIED_EMAIL")):
+        return
+    raise exc.AuthenticationFailed(
+        _("A Taiga account with this email already exists, but your identity provider does not mark "
+          "the email as verified, so it cannot be linked (OPENID_REQUIRE_VERIFIED_EMAIL). "
+          "Ask an administrator to verify your email."))
+
+
 @tx.atomic
-def openid_register(username:str, email:str, full_name:str, openid_id:int, token: str | None = None):
+def openid_register(username:str, email:str, full_name:str, openid_id:int, token: str | None = None,
+                    email_verified: bool = False):
     """
     Register a new user from openid.
 
@@ -50,6 +65,7 @@ def openid_register(username:str, email:str, full_name:str, openid_id:int, token
         try:
             # Is a user with the same email as the openid user?
             user = user_model.objects.get(email=email)
+            check_email_link(email_verified)
             auth_data_model.objects.create(user=user, key="openid", value=openid_id, extra={})
         except user_model.DoesNotExist:
             if PUBLIC_REGISTER_ENABLED:
@@ -90,6 +106,7 @@ def openid_login_func(request):
                            email=user_info.email,
                            full_name=user_info.full_name,
                            openid_id=user_info.id,
-                           token=token)
+                           token=token,
+                           email_verified=user_info.email_verified)
     data = make_auth_response_data(user)
     return data
