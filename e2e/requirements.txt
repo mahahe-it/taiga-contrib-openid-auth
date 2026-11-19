@@ -1,0 +1,5 @@
+# Keep playwright in step with the runner image tag in e2e/Dockerfile.
+playwright==1.65.2
+pytest==9.2.0
+pytest-playwright==0.10.0
+requests==2.32.5

@@ -1,0 +1,179 @@
+# End-to-end stack: Taiga with the openid images, Keycloak and a Playwright
+# runner on one network, so the browser and taiga-back resolve the same URLs.
+# Modelled on taigaio/taiga-docker. Run it with `just e2e`.
+name: taiga-openid-e2e
+
+x-back-environment: &back-environment
+  POSTGRES_DB: taiga
+  POSTGRES_USER: taiga
+  POSTGRES_PASSWORD: taiga
+  POSTGRES_HOST: taiga-db
+  TAIGA_SECRET_KEY: e2e-secret-key
+  TAIGA_SITES_SCHEME: http
+  TAIGA_SITES_DOMAIN: taiga-gateway
+  TAIGA_SUBPATH: ""
+  EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+  DEFAULT_FROM_EMAIL: taiga@example.test
+  RABBITMQ_USER: taiga
+  RABBITMQ_PASS: taiga
+  ENABLE_TELEMETRY: "False"
+  PUBLIC_REGISTER_ENABLED: "True"
+  ENABLE_OPENID: "True"
+  OPENID_USER_URL: http://keycloak:8080/realms/taiga/protocol/openid-connect/userinfo
+  OPENID_TOKEN_URL: http://keycloak:8080/realms/taiga/protocol/openid-connect/token
+  OPENID_CLIENT_ID: taiga
+  OPENID_CLIENT_SECRET: e2e-secret
+  OPENID_SCOPE: openid email profile
+  OPENID_FILTER: taiga_users
+  OPENID_FILTER_FIELD: groups
+
+x-back-volumes: &back-volumes
+  - taiga-static-data:/taiga-back/static
+  - taiga-media-data:/taiga-back/media
+
+x-rabbitmq-environment: &rabbitmq-environment
+  RABBITMQ_ERLANG_COOKIE: e2e-erlang-cookie
+  RABBITMQ_DEFAULT_USER: taiga
+  RABBITMQ_DEFAULT_PASS: taiga
+  RABBITMQ_DEFAULT_VHOST: taiga
+
+services:
+  taiga-db:
+    # renovate: datasource=docker depName=postgres
+    image: docker.io/library/postgres:13.23-alpine
+    environment:
+      POSTGRES_DB: taiga
+      POSTGRES_USER: taiga
+      POSTGRES_PASSWORD: taiga
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taiga"]
+      interval: 2s
+      timeout: 15s
+      retries: 15
+
+  taiga-back:
+    image: ${BACK_IMAGE:?set BACK_IMAGE}
+    environment: *back-environment
+    volumes: *back-volumes
+    depends_on:
+      taiga-db:
+        condition: service_healthy
+      taiga-async-rabbitmq:
+        condition: service_started
+      taiga-events-rabbitmq:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/')"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  taiga-async:
+    image: ${BACK_IMAGE:?set BACK_IMAGE}
+    entrypoint: ["/taiga-back/docker/async_entrypoint.sh"]
+    environment: *back-environment
+    volumes: *back-volumes
+    depends_on:
+      taiga-db:
+        condition: service_healthy
+      taiga-async-rabbitmq:
+        condition: service_started
+
+  taiga-async-rabbitmq:
+    # renovate: datasource=docker depName=rabbitmq
+    image: docker.io/library/rabbitmq:3.13.7-alpine
+    hostname: taiga-async-rabbitmq
+    environment: *rabbitmq-environment
+
+  taiga-front:
+    image: ${FRONT_IMAGE:?set FRONT_IMAGE}
+    environment:
+      TAIGA_URL: http://taiga-gateway
+      TAIGA_WEBSOCKETS_URL: ws://taiga-gateway
+      TAIGA_SUBPATH: ""
+      PUBLIC_REGISTER_ENABLED: "true"
+      ENABLE_OPENID: "true"
+      OPENID_URL: http://keycloak:8080/realms/taiga/protocol/openid-connect/auth
+      OPENID_CLIENT_ID: taiga
+      OPENID_NAME: Keycloak E2E
+      OPENID_SCOPE: openid email profile
+
+  taiga-events:
+    # renovate: datasource=docker depName=taigaio/taiga-events
+    image: docker.io/taigaio/taiga-events:6.10.0
+    environment:
+      RABBITMQ_USER: taiga
+      RABBITMQ_PASS: taiga
+      TAIGA_SECRET_KEY: e2e-secret-key
+    depends_on:
+      taiga-events-rabbitmq:
+        condition: service_started
+
+  taiga-events-rabbitmq:
+    # renovate: datasource=docker depName=rabbitmq
+    image: docker.io/library/rabbitmq:3.13.7-alpine
+    hostname: taiga-events-rabbitmq
+    environment: *rabbitmq-environment
+
+  taiga-protected:
+    # renovate: datasource=docker depName=taigaio/taiga-protected
+    image: docker.io/taigaio/taiga-protected:6.10.1
+    environment:
+      MAX_AGE: "360"
+      SECRET_KEY: e2e-secret-key
+
+  taiga-gateway:
+    # renovate: datasource=docker depName=nginx
+    image: docker.io/library/nginx:1.30.7-alpine
+    volumes:
+      - ./gateway.conf:/etc/nginx/conf.d/default.conf:ro,z
+      - taiga-static-data:/taiga/static
+      - taiga-media-data:/taiga/media
+    depends_on:
+      taiga-front:
+        condition: service_started
+      taiga-back:
+        condition: service_healthy
+      taiga-events:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1/"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  keycloak:
+    # renovate: datasource=docker depName=quay.io/keycloak/keycloak
+    image: quay.io/keycloak/keycloak:26.8.2
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_HOSTNAME: http://keycloak:8080
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realm-taiga.json:/opt/keycloak/data/import/realm-taiga.json:ro,z
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q UP <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  e2e:
+    profiles: [test]
+    build: .
+    environment:
+      TAIGA_URL: http://taiga-gateway
+    volumes:
+      - ./tests:/e2e/tests:ro,z
+      - ./results:/e2e/results:z
+    depends_on:
+      taiga-gateway:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+volumes:
+  taiga-static-data:
+  taiga-media-data:

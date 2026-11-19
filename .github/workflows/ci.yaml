@@ -42,3 +42,66 @@ jobs:
         run: |
           pip install "pre-commit==${PRE_COMMIT_VERSION}"
           pre-commit run --all-files --show-diff-on-failure
+
+  images:
+    # Built once, shared with the test jobs as a docker-save artifact
+    name: images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: docker/setup-buildx-action@v4.4.1
+
+      - name: Build taiga-back-openid
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: docker/back/Dockerfile
+          tags: localhost/taiga-back-openid:dev
+          outputs: type=docker,dest=${{ runner.temp }}/back.tar
+          cache-from: type=gha,scope=back
+          cache-to: type=gha,scope=back,mode=max
+
+      - name: Build taiga-front-openid
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: docker/front/Dockerfile
+          tags: localhost/taiga-front-openid:dev
+          outputs: type=docker,dest=${{ runner.temp }}/front.tar
+          cache-from: type=gha,scope=front
+          cache-to: type=gha,scope=front,mode=max
+
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: images
+          path: ${{ runner.temp }}/*.tar
+          retention-days: 1
+
+  e2e:
+    name: e2e
+    needs: images
+    runs-on: ubuntu-latest
+    env:
+      CONTAINER_CLI: docker
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: images
+          path: ${{ runner.temp }}/images
+
+      - name: Load images
+        run: for tar in "$RUNNER_TEMP"/images/*.tar; do docker load -i "$tar"; done
+
+      - uses: extractions/setup-just@v4
+
+      - name: OpenID login against Keycloak
+        run: just e2e
+
+      - if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: e2e-results
+          path: e2e/results
