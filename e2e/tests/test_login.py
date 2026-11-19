@@ -187,3 +187,12 @@ def test_login_under_subpath(page: Page):
 
     openid_login(page, "alice", path="/taiga/login")
     assert api_me(wait_for_token(page))["username"] == "alice"
+
+
+def test_login_form_hidden(page: Page):
+    """OPENID_HIDE_LOGIN_FORM=true on the subpath front: only the OpenID button."""
+    page.goto(f"{TAIGA_URL}/taiga/login")
+    expect(page.get_by_text(f"Sign in with {OPENID_NAME}")).to_be_visible(timeout=30_000)
+    expect(page.locator("input[name='password']")).to_have_count(0)
+    page.goto(f"{TAIGA_URL}/login")
+    expect(page.locator("input[name='password']")).to_be_visible(timeout=30_000)

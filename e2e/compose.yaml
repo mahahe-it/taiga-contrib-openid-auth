@@ -99,7 +99,7 @@ services:
       OPENID_NAME: Keycloak E2E
       OPENID_SCOPE: openid email profile
 
-  # The same front under a subpath, behind the gateway at /taiga/
+  # The same front under a subpath, behind the gateway at /taiga/, OpenID only
   taiga-front-subpath:
     image: ${FRONT_IMAGE:?set FRONT_IMAGE}
     environment:
@@ -112,6 +112,7 @@ services:
       OPENID_CLIENT_ID: taiga
       OPENID_NAME: Keycloak E2E
       OPENID_SCOPE: openid email profile
+      OPENID_HIDE_LOGIN_FORM: "true"
 
   taiga-events:
     image: docker.io/taigaio/taiga-events:6.10.0

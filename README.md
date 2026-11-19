@@ -94,6 +94,13 @@ mounted over upstream's keeps working.
 | `OPENID_CLIENT_ID` | | |
 | `OPENID_NAME` | `OpenID` | the button reads "Sign in with `<name>`" |
 | `OPENID_SCOPE` | `openid email` | same value as the back's |
+| `OPENID_HIDE_LOGIN_FORM` | `false` | `true` hides the username/password form on the login page |
+
+`OPENID_HIDE_LOGIN_FORM=true` sets upstream's `defaultLoginEnabled` to `false`:
+the login page shows only the OpenID button. It does not turn passwords off:
+the API, the invitation page and Django's admin still accept them. To close
+Taiga's own sign-up as well, leave `PUBLIC_REGISTER_ENABLED` off on the back
+and use `OPENID_REGISTER_ENABLED`.
 
 The image adds these settings and the plugin to the `conf.json` that upstream
 generates at the first start. A `conf.json` you mount yourself is left alone:

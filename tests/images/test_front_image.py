@@ -81,3 +81,12 @@ def test_plugin_image_is_intact(start_front):
     served = container.exec("sha256sum", "/usr/share/nginx/html/plugins/openid-auth/images/openid.png").stdout.split()[0]
     source = Path(__file__).parents[2] / "front" / "images" / "openid.png"
     assert served == hashlib.sha256(source.read_bytes()).hexdigest()
+
+
+def test_login_form_shown_by_default(start_front):
+    assert conf(start_front(ENABLED))["defaultLoginEnabled"] is True
+
+
+@pytest.mark.parametrize(("value", "shown"), [("true", False), ("false", True)])
+def test_hide_login_form(start_front, value, shown):
+    assert conf(start_front({**ENABLED, "OPENID_HIDE_LOGIN_FORM": value}))["defaultLoginEnabled"] is shown
