@@ -196,3 +196,33 @@ def test_login_form_hidden(page: Page):
     expect(page.locator("input[name='password']")).to_have_count(0)
     page.goto(f"{TAIGA_URL}/login")
     expect(page.locator("input[name='password']")).to_be_visible(timeout=30_000)
+
+
+def test_logout_ends_provider_session(page: Page):
+    """OPENID_LOGOUT_URL: logging out of Taiga logs out of Keycloak too."""
+    openid_login(page, "alice")
+    wait_for_token(page)
+    # What the user menu's "Logout" calls
+    page.evaluate("() => angular.element(document.body).injector().get('$tgAuth').logout()")
+    page.wait_for_url(re.compile(r"^http://keycloak:8080/realms/taiga/protocol/openid-connect/logout"))
+    page.click("#kc-logout")  # Keycloak asks to confirm a logout without id_token_hint
+    page.wait_for_url(re.compile(rf"^{re.escape(TAIGA_URL)}/"))
+    assert stored_token(page) is None
+
+    # Without the provider session the button leads to Keycloak's login form again.
+    page.goto(f"{TAIGA_URL}/login")
+    page.get_by_text(f"Sign in with {OPENID_NAME}").click()
+    page.wait_for_url(re.compile(r"^http://keycloak:8080/"))
+    expect(page.locator("#username")).to_be_visible()
+
+
+def test_password_logout_stays_in_taiga(page: Page):
+    """Only OpenID sessions are sent to the provider's logout."""
+    page.goto(f"{TAIGA_URL}/login")
+    page.fill("input[name='username']", "admin")
+    page.fill("input[name='password']", "e2e-admin")
+    page.click("button[type='submit']")
+    wait_for_token(page)
+    page.evaluate("() => angular.element(document.body).injector().get('$tgAuth').logout()")
+    page.wait_for_timeout(2000)
+    assert page.url.startswith(TAIGA_URL)

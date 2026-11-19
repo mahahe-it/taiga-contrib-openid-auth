@@ -28,6 +28,7 @@ def test_enabled_adds_plugin_and_keys(start_front):
     assert loaded["openidClientId"] == "taiga"
     assert loaded["openidName"] == "Example IdP"
     assert loaded["openidScope"] == "openid email"
+    assert loaded["openidLogoutUrl"] == ""
     assert loaded["baseHref"] == "/"  # only upstream's 6.10 template has it
 
 
@@ -90,3 +91,8 @@ def test_login_form_shown_by_default(start_front):
 @pytest.mark.parametrize(("value", "shown"), [("true", False), ("false", True)])
 def test_hide_login_form(start_front, value, shown):
     assert conf(start_front({**ENABLED, "OPENID_HIDE_LOGIN_FORM": value}))["defaultLoginEnabled"] is shown
+
+
+def test_logout_url(start_front):
+    loaded = conf(start_front({**ENABLED, "OPENID_LOGOUT_URL": "https://idp.example.test/logout"}))
+    assert loaded["openidLogoutUrl"] == "https://idp.example.test/logout"

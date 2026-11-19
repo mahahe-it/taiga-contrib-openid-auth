@@ -27,10 +27,12 @@ jq \
     --arg scope "${OPENID_SCOPE:-openid email}" \
     --arg plugin "plugins/openid-auth/openid-auth.json" \
     --arg hideLoginForm "${OPENID_HIDE_LOGIN_FORM:-false}" \
+    --arg logoutUrl "${OPENID_LOGOUT_URL:-}" \
     '.openidAuth = $auth
      | .openidClientId = $clientId
      | .openidName = $name
      | .openidScope = $scope
+     | .openidLogoutUrl = $logoutUrl
      | .contribPlugins = ((.contribPlugins // []) | if any(.[]; . == $plugin) then . else . + [$plugin] end)
      | if $hideLoginForm == "true" then .defaultLoginEnabled = false else . end' \
     "$conf" > "$tmp"

@@ -22,6 +22,10 @@
 # File: openid-auth.coffee
 ###
 
+# Set when the user signs in with OpenID: only those sessions are ended at the
+# provider on logout.
+SESSION_KEY = "openidAuthSession"
+
 OpenIDLoginButtonDirective = ($window, $params, $location, $config, $events, $confirm,
 	$auth, $navUrls, $loader) ->
 	# Login or registar a user with his/her openid account.
@@ -44,6 +48,11 @@ OpenIDLoginButtonDirective = ($window, $params, $location, $config, $events, $co
 				nextUrl = $navUrls.resolve("home")
 
 			$events.setupConnection()
+
+			try
+				$window.localStorage.setItem(SESSION_KEY, "1")
+			catch error
+				# No storage: the provider session simply outlives Taiga's
 
 			$location.search("next", null)
 			$location.search("token", null)
@@ -130,7 +139,28 @@ OpenIDLoginButtonDirective = ($window, $params, $location, $config, $events, $co
 		template: ""
 	}
 
+# RP-initiated logout (OpenID Connect RP-Initiated Logout 1.0): after Taiga's
+# logout, send the browser to the provider's end-session endpoint, which
+# redirects back to Taiga. No id_token_hint (the front never sees the ID
+# token), so some providers ask the user to confirm.
+OpenIDLogoutRun = ($rootScope, $window, $config) ->
+	$rootScope.$on "auth:logout", ->
+		logoutUrl = $config.get("openidLogoutUrl", null)
+		try
+			signedInWithOpenID = $window.localStorage.getItem(SESSION_KEY)
+			$window.localStorage.removeItem(SESSION_KEY)
+		catch error
+			signedInWithOpenID = null
+		return if not logoutUrl or not signedInWithOpenID
+		params =
+			client_id: $config.get("openidClientId", "taiga")
+			post_logout_redirect_uri: $window.document.baseURI
+		query = ("#{encodeURIComponent(k)}=#{encodeURIComponent(v)}" for own k, v of params).join("&")
+		separator = if logoutUrl.indexOf("?") >= 0 then "&" else "?"
+		$window.location.href = logoutUrl + separator + query
+
 module = angular.module('taigaContrib.openidAuth', [])
 module.directive("tgOpenidLoginButton", ["$window", '$routeParams', "$tgLocation", "$tgConfig", "$tgEvents",
 	"$tgConfirm", "$tgAuth", "$tgNavUrls", "tgLoader",
 	OpenIDLoginButtonDirective])
+module.run(["$rootScope", "$window", "$tgConfig", OpenIDLogoutRun])
