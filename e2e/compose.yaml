@@ -17,7 +17,9 @@ x-back-environment: &back-environment
   RABBITMQ_USER: taiga
   RABBITMQ_PASS: taiga
   ENABLE_TELEMETRY: "False"
-  PUBLIC_REGISTER_ENABLED: "True"
+  # Taiga's own sign-up closed, accounts created on the first OpenID login
+  PUBLIC_REGISTER_ENABLED: "False"
+  OPENID_REGISTER_ENABLED: "True"
   ENABLE_OPENID: "True"
   OPENID_USER_URL: http://keycloak:8080/realms/taiga/protocol/openid-connect/userinfo
   OPENID_TOKEN_URL: http://keycloak:8080/realms/taiga/protocol/openid-connect/token

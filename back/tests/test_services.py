@@ -32,3 +32,20 @@ def test_unset_require_verified_email_keeps_default(openid_settings, unset):
     openid_settings.OPENID_REQUIRE_VERIFIED_EMAIL = unset
     with pytest.raises(AuthenticationFailed):
         services.check_email_link(False)
+
+
+@pytest.mark.parametrize("public", [True, False])
+@pytest.mark.parametrize("unset", ["absent", None, ""])
+def test_register_follows_public_register_by_default(openid_settings, public, unset):
+    openid_settings.PUBLIC_REGISTER_ENABLED = public
+    if unset != "absent":
+        openid_settings.OPENID_REGISTER_ENABLED = unset
+    assert services.register_enabled() is public
+
+
+@pytest.mark.parametrize(("value", "expected"), [(True, True), ("True", True), (False, False), ("false", False)])
+@pytest.mark.parametrize("public", [True, False])
+def test_register_setting_overrides_public_register(openid_settings, public, value, expected):
+    openid_settings.PUBLIC_REGISTER_ENABLED = public
+    openid_settings.OPENID_REGISTER_ENABLED = value
+    assert services.register_enabled() is expected

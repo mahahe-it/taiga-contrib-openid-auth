@@ -11,6 +11,7 @@ from conftest import (
     TAIGA_URL,
     admin_token,
     api_me,
+    create_local_user,
     db_query,
     openid_login,
     stored_token,
@@ -52,26 +53,25 @@ def test_user_outside_filter_rejected(page: Page):
     assert stored_token(page) is None
 
 
-def register_local(username: str, email: str) -> int:
-    """A password account, created through Taiga's public registration."""
+def test_public_registration_closed():
+    """The stack runs with PUBLIC_REGISTER_ENABLED=False: OpenID sign-up must not need it."""
     response = requests.post(
         f"{API_URL}/auth/register",
         json={
             "type": "public",
-            "username": username,
-            "email": email,
-            "full_name": username,
-            "password": f"{username}-pw",
+            "username": "mallory",
+            "email": "mallory@example.test",
+            "full_name": "Mallory",
+            "password": "mallory-pw",
             "accepted_terms": True,
         },
         timeout=10,
     )
-    response.raise_for_status()
-    return response.json()["id"]
+    assert response.status_code == 400
 
 
 def test_existing_email_is_linked(page: Page):
-    local_id = register_local("carol-local", "carol@example.test")
+    local_id = create_local_user("carol-local", "carol@example.test")
 
     openid_login(page, "carol")
     me = api_me(wait_for_token(page))
@@ -81,7 +81,7 @@ def test_existing_email_is_linked(page: Page):
 
 def test_unverified_email_not_linked(page: Page):
     """Account takeover: an unverified email must not reach the existing account."""
-    register_local("dave-local", "dave@example.test")
+    create_local_user("dave-local", "dave@example.test")
 
     openid_login(page, "dave")
     expect(page.get_by_text(re.compile("OPENID_REQUIRE_VERIFIED_EMAIL"))).to_be_visible(timeout=30_000)

@@ -32,6 +32,7 @@ def openid_settings(settings):
         "OPENID_ALLOW_ACCESS_TOKEN",
         "OPENID_TIMEOUT",
         "OPENID_TOKEN_AUTH_METHOD",
+        "OPENID_REGISTER_ENABLED",
     ):
         if hasattr(settings, name):
             delattr(settings, name)

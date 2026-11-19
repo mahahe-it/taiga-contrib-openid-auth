@@ -52,6 +52,20 @@ def db_query(sql: str, *params):
         return cursor.fetchall() if cursor.description else []
 
 
+def create_local_user(username: str, email: str) -> int:
+    """A password account (the admin's password), without public registration."""
+    with psycopg.connect("host=taiga-db dbname=taiga user=taiga password=taiga") as conn:
+        conn.execute("CREATE TEMP TABLE new_user AS SELECT * FROM users_user WHERE username = 'admin'")
+        conn.execute(
+            """UPDATE new_user SET id = nextval(pg_get_serial_sequence('users_user', 'id')),
+                   uuid = replace(gen_random_uuid()::text, '-', ''),
+                   username = %s, email = %s, full_name = %s, is_superuser = false""",
+            (username, email, username),
+        )
+        [(user_id,)] = conn.execute("INSERT INTO users_user SELECT * FROM new_user RETURNING id").fetchall()
+    return user_id
+
+
 def api_me(token: str) -> dict:
     response = requests.get(
         f"{API_URL}/users/me", headers={"Authorization": f"Bearer {token}"}, timeout=10

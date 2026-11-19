@@ -27,7 +27,17 @@ from taiga.base.utils.slug import slugify_uniquely
 
 from . import connector
 
-PUBLIC_REGISTER_ENABLED = getattr(settings, "PUBLIC_REGISTER_ENABLED", False)
+
+def register_enabled() -> bool:
+    """
+    Whether the first OpenID login may create an account: OPENID_REGISTER_ENABLED,
+    or, when unset, Taiga's PUBLIC_REGISTER_ENABLED (which also opens Taiga's own
+    username/password sign-up).
+    """
+    value = connector._setting("OPENID_REGISTER_ENABLED")
+    if value is None:
+        return bool(getattr(settings, "PUBLIC_REGISTER_ENABLED", False))
+    return connector.is_true(value)
 
 
 def check_email_link(email_verified: bool) -> None:
@@ -68,7 +78,7 @@ def openid_register(username:str, email:str, full_name:str, openid_id:int, token
             check_email_link(email_verified)
             auth_data_model.objects.create(user=user, key="openid", value=openid_id, extra={})
         except user_model.DoesNotExist:
-            if PUBLIC_REGISTER_ENABLED:
+            if register_enabled():
                 # Create a new user
                 username_unique = slugify_uniquely(username, user_model, slugfield="username")
                 user = user_model.objects.create(email=email,
@@ -80,7 +90,8 @@ def openid_register(username:str, email:str, full_name:str, openid_id:int, token
                 user_registered_signal.send(sender=user.__class__, user=user)
             else:
                 raise exc.IntegrityError(
-                _("Sorry, was unable to locate user and registrations have been disabled by the Administrator"))
+                _("Sorry, was unable to locate user and registrations have been disabled by the Administrator "
+                  "(OPENID_REGISTER_ENABLED)"))
 
 
     if token:
