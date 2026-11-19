@@ -233,3 +233,28 @@ def test_filter_claim_of_other_types_rejected(openid_settings, claim, type_name)
         profile({**USERINFO, "groups": claim})
     assert "a string or a list of strings" in str(excinfo.value.detail)
     assert type_name in str(excinfo.value.detail)
+
+
+@pytest.mark.parametrize("unset", [None, ""])
+def test_unset_scope_uses_default(openid_settings, unset):
+    """Old-style config.py (os.getenv) sets unset variables to None; Helm renders ""."""
+    openid_settings.OPENID_SCOPE = unset
+    reply = fake_response(200, {"access_token": "tok"})
+    with mock.patch("requests.post", return_value=reply) as post:
+        connector.login("the-code", None, "http://taiga/login")
+    assert post.call_args.kwargs["data"]["scope"] == "openid email"
+
+
+@pytest.mark.parametrize("unset", [None, ""])
+def test_unset_filter_with_filter_field_rejects(openid_settings, unset):
+    openid_settings.OPENID_FILTER = unset
+    openid_settings.OPENID_FILTER_FIELD = "groups"
+    with pytest.raises(AuthenticationFailed):
+        profile(USERINFO)
+
+
+@pytest.mark.parametrize("unset", [None, ""])
+def test_unset_field_mapping_uses_default(openid_settings, unset):
+    openid_settings.OPENID_FILTER_FIELD = unset
+    openid_settings.OPENID_EMAIL_FIELD = unset
+    assert profile(USERINFO).email == "alice@example.test"
