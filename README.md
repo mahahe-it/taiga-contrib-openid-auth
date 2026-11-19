@@ -47,6 +47,12 @@ settings, and with `ENABLE_OPENID=True` it needs the plugin installed.
 accounts on the first login; without it only existing users can sign in. A user
 whose email matches an existing Taiga account is linked to that account.
 
+> **Warning:** the link is made on the email alone; the provider's
+> `email_verified` claim is not checked. If your provider lets people register
+> themselves without verifying their email, someone can sign up with the email
+> of an existing Taiga user (an admin, too) and sign in as that user. Turn off
+> self-registration, or require email verification, on the client Taiga uses.
+
 The image selects its settings with `DJANGO_SETTINGS_MODULE=settings.openid`,
 which loads upstream's `settings/config.py` and adds the plugin. A `config.py`
 mounted over upstream's keeps working.
