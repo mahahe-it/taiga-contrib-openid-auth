@@ -1,0 +1,43 @@
+name: Bug report
+description: Login through your identity provider fails, or an image misbehaves
+labels: ["Bug"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - taiga-back-openid image
+        - taiga-front-openid image
+        - Plugin installed by hand
+    validations:
+      required: true
+  - type: input
+    id: image-tag
+    attributes:
+      label: Image tags or plugin version
+      placeholder: taiga-back-openid:6.10.2-openid.1.0.0, taiga-front-openid:6.10.3-openid.1.0.0
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Identity provider and version
+      placeholder: Keycloak 26.4
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Include error messages, the taiga-back logs and the browser console.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: The ENABLE_OPENID / OPENID_* variables you set. Remove client secrets and passwords.
+      render: shell

@@ -1,0 +1,16 @@
+name: Feature request
+description: Something the plugin or the images do not let you do today
+labels: ["Enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you need
+      description: The use case, and what does not work for you today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: For example a new variable or a behaviour. Pull requests are welcome too, see CONTRIBUTING.md.

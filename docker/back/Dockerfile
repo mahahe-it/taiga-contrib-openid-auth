@@ -2,11 +2,11 @@ ARG TAIGA_VERSION=latest
 ARG RELEASE=master
 FROM taigaio/taiga-back:${TAIGA_VERSION}
 ENV OPENID_SCOPE="openid email"
-ADD docker/back/config.py.snippet /tmp
+COPY docker/back/config.py.snippet /tmp
 COPY back/. /tmp/
 
 #some debug-hack!
-#ADD docker/back/copied_services.py /taiga-back/taiga/projects/tasks/services.py 
+#ADD docker/back/copied_services.py /taiga-back/taiga/projects/tasks/services.py
 #RUN ls -alh /tmp
 #RUN ls -alh /taiga-back/taiga/projects/tasks
 
@@ -17,5 +17,5 @@ COPY back/. /tmp/
 # && rm -r /tmp/taiga-contrib-openid-auth* \
 # && cat /tmp/config.py.snippet >> /taiga-back/settings/config.py
 
-RUN pip install /tmp \
+RUN pip install --no-cache-dir /tmp \
  && cat /tmp/config.py.snippet >> /taiga-back/settings/config.py

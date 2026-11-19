@@ -280,11 +280,7 @@ Add the following values to `{path-to-taiga-frontend}/conf.json`:
 
 # Building
 
-The make file contains the basic blocks to locally build the UI and docker containers.
-
-```
-make build
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development environment and the `just` recipes.
 
 # Contributions
 My thanks to all the people who have added to the plugin
