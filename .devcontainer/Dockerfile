@@ -14,7 +14,7 @@ ARG JQ_VERSION=1.7.1*
 # renovate: datasource=github-releases depName=casey/just
 ARG JUST_VERSION=1.59.0
 # renovate: datasource=github-releases depName=cli/cli extractVersion=^v(?<version>.+)$
-ARG GH_VERSION=2.105.0
+ARG GH_VERSION=2.106.0
 # pipx (global: /opt/pipx, bins in /usr/local/bin, so the host user finds
 # them too when the image runs as a distrobox)
 # renovate: datasource=pypi depName=pre-commit
